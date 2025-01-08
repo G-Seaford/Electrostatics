@@ -6,6 +6,10 @@ MODULE solve_gauss_seidel
     
     IMPLICIT NONE
 
+    !!!!!!!!!!!!!!!!!!!!!!!!!!
+    !! Insert used packages !!
+    !!!!!!!!!!!!!!!!!!!!!!!!!!
+
     TYPE :: GaussSeidelData
         !> Derived type for data storage across modules
 
@@ -204,26 +208,83 @@ MODULE solve_gauss_seidel
 
     END SUBROUTINE PhiUpdate
 
-    SUBROUTINE EfieldUpdate(data_in, x_idx, y_idx)
-        !> Updates the electric field components at a given grid location.
+    SUBROUTINE EfieldUpdate(data_in)
+        !> Subroutine to update the electric field components in Ex and Ey.
         !! @param[inout] data_in The GaussSeidelData structure holding data.
-        !! @param[in] x_idx The x index.
-        !! @param[in] y_idx The y index.
 
         TYPE(GaussSeidelData), INTENT(INOUT)    :: data_in
-        INTEGER, INTENT(IN)                     :: x_idx, y_idx
+        INTEGER                                 :: x_idx, y_idx
         REAL                                    :: dx, dy, phi_xdiff, phi_ydiff
 
         dx = data_in%dx
         dy = data_in%dy
 
-        phi_xdiff = (data_in%phi(x_idx + 1, y_idx) - data_in%phi(x_idx - 1, y_idx))
-        phi_ydiff = (data_in%phi(x_idx, y_idx + 1) - data_in%phi(x_idx, y_idx - 1))
+        DO y_idx = 1, data_in%ny
+            DO x_idx = 1, data_in%nx
 
-        data_in%Ex(x_idx, y_idx) = phi_xdiff / (2 * dx)
-        data_in%Ey(x_idx, y_idx) = phi_ydiff / (2 * dy)
+                phi_xdiff = (data_in%phi(x_idx + 1, y_idx) - data_in%phi(x_idx - 1, y_idx))
+                phi_ydiff = (data_in%phi(x_idx, y_idx + 1) - data_in%phi(x_idx, y_idx - 1))
+
+                data_in%Ex(x_idx, y_idx) = phi_xdiff / (2 * dx)
+                data_in%Ey(x_idx, y_idx) = phi_ydiff / (2 * dy)
+
+            END DO
+        END DO
 
     END SUBROUTINE EfieldUpdate
+
+    LOGICAL FUNCTION ConvergenceTest(data_in) RESULT(is_converged)
+        !> Function to test whether the convergence criterion is achieved.
+        !! @param[in] data_in The GaussSeidelData structure holding data.
+        !! @param[out] isconverged Logical determining whether convergence has been attained.
+
+        TYPE(GaussSeidelData), INTENT(IN)   :: data_in
+        INTEGER                             :: x_idx, y_idx, n_sites
+        REAL                                :: rho, dx, dy, dx2_inv, dy2_inv, phi_xdiff, phi_ydiff, tot_diff, e_tot, d_rms, ratio
+
+        is_converged = .FALSE.
+
+        dx = data_in%dx
+        dy = data_in%dy
+        n_sites = data_in%nx * data_in%ny
+
+        e_tot = 0.0
+        d_rms = 0.0
+
+        dx2_inv = 1/(dx * dx)
+        dy2_inv = 1/(dy * dy)
+
+        DO y_idx = 1, data_in%ny
+            DO x_idx = 1, data_in%nx
+
+                rho = data_in%rho(x_idx, y_idx)
+
+                phi_xdiff = (data_in%phi(x_idx + 1, y_idx) - 2.0 * data_in%phi(x_idx, y_idx) + data_in%phi(x_idx - 1, y_idx))
+                phi_ydiff = (data_in%phi(x_idx, y_idx + 1) -  2.0 * data_in%phi(x_idx, y_idx) + data_in%phi(x_idx, y_idx - 1))
+
+                tot_diff = phi_xdiff * dx2_inv + phi_ydiff * dy2_inv
+
+                d_rms = d_rms + tot_diff
+                e_tot = e_tot + ABS(tot_diff - rho)
+
+            END DO
+        END DO
+
+        d_rms = SQRT(d_rms / n_sites)
+
+        IF (d_rms == 0.0) THEN
+            ratio = e_tot
+
+        ELSE 
+            ratio = e_tot / d_rms
+
+        END IF
+
+        IF (ratio < 0.00001) THEN
+            is_converged = .TRUE.
+        END IF
+
+    END FUNCTION ConvergenceTest
 
     SUBROUTINE SweepPhi(data_in)
         !> Performs a Gauss–Seidel sweep over the entire phi array,
@@ -231,18 +292,49 @@ MODULE solve_gauss_seidel
         !! @param[inout] data_in The GaussSeidelData structure containing the grid and field arrays.
 
         TYPE(GaussSeidelData), INTENT(INOUT)    :: data_in
-        INTEGER                                 :: nx, ny, i_idx, j_idx
+        INTEGER                                 :: nx, ny, x_idx, y_idx
 
-        DO j_idx=1, ny
-            DO i_idx=1, nx
+        DO y_idx=1, ny
+            DO x_idx=1, nx
 
-                CALL PhiUpdate(data_in, i_idx, j_idx)
-                CALL EfieldUpdate(data_in, i_idx, j_idx)
+                CALL PhiUpdate(data_in, x_idx, y_idx)
 
             END DO
 
         END DO
 
     END SUBROUTINE SweepPhi
+
+    SUBROUTINE GaussSeidel(data_in)
+        !> Subroutine to perform the Gauss-Seidel algorithm to a Poisson equation.
+        TYPE(GaussSeidelData), INTENT(INOUT)    :: data_in
+        INTEGER                                 :: t_idx
+        REAL                                    :: dt
+        LOGICAL                                 :: is_converged
+
+        is_converged = .FALSE.
+
+        DO t_idx = 1, data_in%n_iter
+
+            DO WHILE ( .NOT. is_converged)
+
+                CALL SweepPhi(data_in)
+                is_converged = ConvergenceTest(data_in)
+
+            END DO
+
+            CALL EfieldUpdate(data_in)
+
+            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            !! Insert position stuff here !!
+            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+        END DO
+
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        !! Insert netCDF stuff here !!
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    END SUBROUTINE GaussSeidel
 
 END MODULE solve_gauss_seidel
