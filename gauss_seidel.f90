@@ -1,13 +1,13 @@
 MODULE solve_gauss_seidel
     !> Solves the Poisson equation iteratively via the Gauss-Seidel method.
-    !! author: Gianluca Seaford
-    !! version: 1.0
-    !! date: 2024-11-29
+    !! @author Gianluca Seaford
+    !! @version 1.0
+    !! @date 2024-11-29
     
     IMPLICIT NONE
 
-    !> Define derived type for data storage
     TYPE :: GaussSeidelData
+        !> Derived type for data storage across modules
 
         !! Simulation Parameters
         INTEGER         :: nx, ny, n_iter
@@ -32,11 +32,15 @@ MODULE solve_gauss_seidel
 
     SUBROUTINE InitialiseGaussSeidelData(data, init_type, nx, ny, n_iter, dx, dy, dt, status)
         !> Initialises the data structure for the Gauss-Seidel method.
-        !! @param data: The GaussSeidelData structure to initialise.
-        !! @param nx: The number of grid points in the x-direction.
-        !! @param ny: The number of grid points in the y-direction.
-        !! @param dx: The grid spacing in the x-direction.
-        !! @param dy: The grid spacing in the y-direction.
+        !! @param[inout] data The GaussSeidelData structure to initialise.
+        !! @param[in] init_type The initialisation type.
+        !! @param[in] nx The number of grid points in the x-direction.
+        !! @param[in] ny The number of grid points in the y-direction.
+        !! @param[in] n_iter The number of iterations.
+        !! @param[in] dx The grid spacing in the x-direction.
+        !! @param[in] dy The grid spacing in the y-direction.
+        !! @param[in] dt The time step.
+        !! @param[inout] status Status for error handling.
 
         TYPE(GaussSeidelData), INTENT(INOUT)    :: data
         CHARACTER(LEN=*), INTENT(IN)            :: init_type
@@ -172,5 +176,73 @@ MODULE solve_gauss_seidel
         END SELECT
 
     END SUBROUTINE InitialiseGaussSeidelData
+
+    SUBROUTINE PhiUpdate(data_in, x_idx, y_idx)
+        !> Subroutine to update a given phi element
+        !! @param[inout] data_in The GaussSeidelData structure holding data.
+        !! @param[in] x_idx The x index.
+        !! @param[in] y_idx The y index.
+
+        TYPE(GaussSeidelData), INTENT(INOUT)    :: data_in
+        INTEGER, INTENT(IN)                     :: x_idx, y_idx
+        REAL                                    :: dx, dy, dx2_inv, dy2_inv, rho, phi_current, phi_xdiff, phi_ydiff, denom_inv
+
+
+        dx = data_in%dx
+        dy = data_in%dy
+        rho = data_in%rho(x_idx, y_idx)
+        phi_current = data_in%phi(x_idx, y_idx)
+
+        dx2_inv = 1/(dx * dx)
+        dy2_inv = 1/(dy * dy)
+        denom_inv = 1/(2 * (dx2_inv + dy2_inv))
+
+        phi_xdiff = (data_in%phi(x_idx + 1, y_idx) + data_in%phi(x_idx - 1, y_idx)) * dx2_inv
+        phi_ydiff = (data_in%phi(x_idx, y_idx + 1) + data_in%phi(x_idx, y_idx - 1)) * dy2_inv
+
+        data_in%phi(x_idx, y_idx) = -1.0 * denom_inv * (rho - phi_xdiff - phi_ydiff)
+
+    END SUBROUTINE PhiUpdate
+
+    SUBROUTINE EfieldUpdate(data_in, x_idx, y_idx)
+        !> Updates the electric field components at a given grid location.
+        !! @param[inout] data_in The GaussSeidelData structure holding data.
+        !! @param[in] x_idx The x index.
+        !! @param[in] y_idx The y index.
+
+        TYPE(GaussSeidelData), INTENT(INOUT)    :: data_in
+        INTEGER, INTENT(IN)                     :: x_idx, y_idx
+        REAL                                    :: dx, dy, phi_xdiff, phi_ydiff
+
+        dx = data_in%dx
+        dy = data_in%dy
+
+        phi_xdiff = (data_in%phi(x_idx + 1, y_idx) - data_in%phi(x_idx - 1, y_idx))
+        phi_ydiff = (data_in%phi(x_idx, y_idx + 1) - data_in%phi(x_idx, y_idx - 1))
+
+        data_in%Ex(x_idx, y_idx) = phi_xdiff / (2 * dx)
+        data_in%Ey(x_idx, y_idx) = phi_ydiff / (2 * dy)
+
+    END SUBROUTINE EfieldUpdate
+
+    SUBROUTINE SweepPhi(data_in)
+        !> Performs a Gauss–Seidel sweep over the entire phi array,
+        !! updating phi and the electric field at each grid point.
+        !! @param[inout] data_in The GaussSeidelData structure containing the grid and field arrays.
+
+        TYPE(GaussSeidelData), INTENT(INOUT)    :: data_in
+        INTEGER                                 :: nx, ny, i_idx, j_idx
+
+        DO j_idx=1, ny
+            DO i_idx=1, nx
+
+                CALL PhiUpdate(data_in, i_idx, j_idx)
+                CALL EfieldUpdate(data_in, i_idx, j_idx)
+
+            END DO
+
+        END DO
+
+    END SUBROUTINE SweepPhi
 
 END MODULE solve_gauss_seidel
