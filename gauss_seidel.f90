@@ -54,6 +54,7 @@ MODULE solve_gauss_seidel
         REAL                                    :: x, y             !! Position variables
         INTEGER, INTENT(INOUT)                  :: status
 
+        !> Set parameters within GaussSeidelData structure.
         data%nx = nx
         data%ny = ny
         data%n_iter = n_iter
@@ -62,7 +63,7 @@ MODULE solve_gauss_seidel
         data%dy = dy
         data%dt = dt
 
-        !> Allocate field arrays
+        !> Allocate field arrays.
         ALLOCATE(data%phi(0:nx+1, 0:ny+1), STAT=status)
         IF (status /= 0) THEN
             PRINT *, "Error allocating memory for phi"
@@ -124,7 +125,8 @@ MODULE solve_gauss_seidel
             RETURN
         END IF
 
-        !> Initialise arrays with zero values
+        !> Initialise arrays with zero values.
+        !! This is equivalent to imposing Dirichlet conditions at boundaries.
         data%phi = 0.0
         data%rho = 0.0
 
@@ -141,13 +143,15 @@ MODULE solve_gauss_seidel
         SELECT CASE(init_type)
 
             CASE("null")
-                !> Zero Gaussian peaks, with null rho
+                !> Zero Gaussian peaks, with null rho.
+                !! Used for a lone charge.
 
                 data%velocity_x(0) = 0.1
                 data%velocity_y(0) = 0.1
 
             CASE("single")
-                !> Single Gaussian Peak
+                !> Single Gaussian Peak.
+                !! Used for a localised point charge distribution.
 
                 DO j = 1, data%ny
                     y = -1.0 + (j - 1) * 2.0 / (data%ny - 1)
@@ -162,7 +166,8 @@ MODULE solve_gauss_seidel
                 data%position_x(0) = 0.1
 
             CASE("double")
-                !> Double Gaussian peak
+                !> Double Gaussian peak.
+                !! Used for two localised point charge distributions. 
 
                 DO j = 1, data%ny
                     y = -1.0 + (j - 1) * 2.0 / (data%ny - 1)
@@ -182,7 +187,8 @@ MODULE solve_gauss_seidel
     END SUBROUTINE InitialiseGaussSeidelData
 
     SUBROUTINE PhiUpdate(data_in, x_idx, y_idx)
-        !> Subroutine to update a given phi element
+        !> Subroutine to update a given phi element.
+        !! Calculates the second-order partial derivatives via a central finite difference method.
         !! @param[inout] data_in The GaussSeidelData structure holding data.
         !! @param[in] x_idx The x index.
         !! @param[in] y_idx The y index.
@@ -210,6 +216,7 @@ MODULE solve_gauss_seidel
 
     SUBROUTINE EfieldUpdate(data_in)
         !> Subroutine to update the electric field components in Ex and Ey.
+        !! Uses a modified first-order 
         !! @param[inout] data_in The GaussSeidelData structure holding data.
 
         TYPE(GaussSeidelData), INTENT(INOUT)    :: data_in
@@ -235,6 +242,7 @@ MODULE solve_gauss_seidel
 
     LOGICAL FUNCTION ConvergenceTest(data_in) RESULT(is_converged)
         !> Function to test whether the convergence criterion is achieved.
+        !! Uses the ratio of the total error to rms distance to evaluate convergence.
         !! @param[in] data_in The GaussSeidelData structure holding data.
         !! @param[out] isconverged Logical determining whether convergence has been attained.
 
@@ -256,6 +264,7 @@ MODULE solve_gauss_seidel
 
         DO y_idx = 1, data_in%ny
             DO x_idx = 1, data_in%nx
+                !> Loop over (x,y) pairs and calculate the rms square distance and total error.
 
                 rho = data_in%rho(x_idx, y_idx)
 
@@ -270,9 +279,11 @@ MODULE solve_gauss_seidel
             END DO
         END DO
 
+        !> Normalise the rms squared distance and sqrt.
         d_rms = SQRT(d_rms / n_sites)
 
         IF (d_rms == 0.0) THEN
+            !> Prevent division by zero.
             ratio = e_tot
 
         ELSE 
@@ -288,7 +299,7 @@ MODULE solve_gauss_seidel
 
     SUBROUTINE SweepPhi(data_in)
         !> Performs a Gauss–Seidel sweep over the entire phi array,
-        !! updating phi and the electric field at each grid point.
+        !! updating phi at each grid point.
         !! @param[inout] data_in The GaussSeidelData structure containing the grid and field arrays.
 
         TYPE(GaussSeidelData), INTENT(INOUT)    :: data_in
@@ -309,7 +320,6 @@ MODULE solve_gauss_seidel
         !> Subroutine to perform the Gauss-Seidel algorithm to a Poisson equation.
         TYPE(GaussSeidelData), INTENT(INOUT)    :: data_in
         INTEGER                                 :: t_idx
-        REAL                                    :: dt
         LOGICAL                                 :: is_converged
 
         is_converged = .FALSE.
@@ -323,11 +333,12 @@ MODULE solve_gauss_seidel
 
             END DO
 
+            !> Update E fields once suitable phi convergence is attained.
             CALL EfieldUpdate(data_in)
 
-            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            !! Insert position stuff here !!
-            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            !! Insert velocity-verlet stuff here !!
+            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
         END DO
 
