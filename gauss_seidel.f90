@@ -248,7 +248,7 @@ MODULE solve_gauss_seidel
 
         TYPE(GaussSeidelData), INTENT(IN)   :: data_in
         INTEGER                             :: x_idx, y_idx, n_sites
-        REAL                                :: rho, dx, dy, dx2_inv, dy2_inv, phi_xdiff, phi_ydiff, tot_diff, e_tot, d_rms, ratio
+        REAL                                :: rho, dx, dy, dx2_inv, dy2_inv, phi_xdiff, phi_ydiff, tot_diff, e_tot, d_rms, ratio, epsilon = 1.0e-12
 
         is_converged = .FALSE.
 
@@ -282,9 +282,16 @@ MODULE solve_gauss_seidel
         !> Normalise the rms squared distance and sqrt.
         d_rms = SQRT(d_rms / n_sites)
 
-        IF (d_rms == 0.0) THEN
+        IF (d_rms < epsilon) THEN
             !> Prevent division by zero.
-            ratio = e_tot
+            IF (e_tot < epsilon) THEN
+                !> True convergence achieved.
+                ratio = 0.0
+            
+            ELSE
+                !> Indicative of an ill-conditioned Laplacian matrix
+                ratio = HUGE(1.0)
+            END IF 
 
         ELSE 
             ratio = e_tot / d_rms
