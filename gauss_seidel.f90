@@ -366,20 +366,28 @@ MODULE solve_gauss_seidel
         PRINT *, "                        Electrostatics [options]                                                  "
         PRINT *, "  Options:                                                                       Default Setting: "
         PRINT *, "                                                                                                  "
-       
+        PRINT *, "  problem = <char>        Initialisation type: null, single, double                    -          "
+        PRINT *, "                          -null: rho = 0                                                          "
+        PRINT *, "                          -single: rho = EXP(-(x/0.1)^2 - (y/0.1)^2)                              "
+        PRINT *, "                          -double: rho = EXP(-((x+0.25)/0.1)^2 - ((y+0.25)/0.1)^2)                &
+              &                                          + EXP(-((x-0.75)/0.2)^2 - ((y-0.75)/0.2)^2)                "
+        PRINT *, "  nx = <integer>          X-grid length                                                50         "
+        PRINT *, "  ny = <integer>          Y-grid length                                                50         "
+        PRINT *, "  n_iter = <integer>      Number of iterations                                        1000        "
+        PRINT *, "  dt = <real64>           Time steps                                                  0.01        "
 
     RETURN
     END SUBROUTINE Display_Help
 
-    SUBROUTINE Parse_Command_Line(problem, nx, ny, n_iter, dx, dy, dt)
+    SUBROUTINE Parse_Command_Line(init_type, nx, ny, n_iter, dt)
 
-        CHARACTER(LEN=*), INTENT(OUT)       :: problem
+        CHARACTER(LEN=*), INTENT(OUT)       :: init_type
         INTEGER, INTENT(OUT)                :: nx, ny
         INTEGER, INTENT(OUT), OPTIONAL      :: n_iter
-        REAl(REAL64), INTENT(OUT), OPTIONAL :: dx, dy, dt
+        REAl(REAL64), INTENT(OUT), OPTIONAL :: dt
 
         INTEGER                             :: arg_count, arg_idx, temp_int
-        REAL                                :: temp_real
+        REAL(REAL64)                        :: temp_real
         LOGICAL                             :: Exists, IsValid
         CHARACTER(LEN=20)                   :: temp_str, arg
 
@@ -398,6 +406,29 @@ MODULE solve_gauss_seidel
 
         CALL parse_args()
 
+        IsValid = get_arg('problem', temp_str, Exists)
+        IF (IsValid .AND. Exists) THEN
+            SELECT CASE(temp_str)
+            CASE('null')
+                init_type = 'null'
+
+            CASE('single')
+                init_type = 'single'
+
+            CASE('double')
+                init_type = 'double'
+
+            CASE DEFAULT
+                CALL Add_Error_Message("Error: Invalid initialisation selected.")
+                CALL Print_Errors()
+                ERROR STOP
+
+            END SELECT
+
+
+        END IF
+
+
         IsValid = get_arg('nx', temp_int, Exists)
         IF (IsValid .AND. Exists) THEN
             IF (temp_int > 0) THEN
@@ -408,13 +439,15 @@ MODULE solve_gauss_seidel
                 !> Warn user that default variable is being used due to invalid grid size.
                 !! Adds corresponding error message to error log.
                 CALL Add_Error_Message("Error: Grid length nx must be a positive integer.")
+                CALL Print_Errors()
                 ERROR STOP
 
             END IF
 
         ELSE
-            !> Warn user that default variable is being used.
+            !> Terminate program due to missing argument.
             CALL Add_Error_Message("Error: Grid length nx not provided.")
+            CALL Print_Errors()
             ERROR STOP
         END IF
 
@@ -422,20 +455,64 @@ MODULE solve_gauss_seidel
         IF (IsValid .AND. Exists) THEN
             IF (temp_int > 0) THEN
                 !> Assigns grid length to correct variable.
-                nx = temp_int
+                ny = temp_int
 
             ELSE
                 !> Warn user that default variable is being used due to invalid grid size.
                 !! Adds corresponding error message to error log.
-                CALL Add_Error_Message("Error: Grid length nx must be a positive integer.")
+                CALL Add_Error_Message("Error: Grid length ny must be a positive integer.")
+                CALL Print_Errors()
                 ERROR STOP
 
             END IF
 
         ELSE
-            !> Warn user that default variable is being used.
-            CALL Add_Error_Message("Error: Grid length nx not provided.")
+            !> Terminate program due to missing argument.
+            CALL Add_Error_Message("Error: Grid length ny not provided.")
+            CALL Print_Errors()
             ERROR STOP
+        END IF
+
+        IsValid = get_arg('n_iter', temp_int, Exists)
+        IF (IsValid .AND. Exists) THEN
+            IF (temp_int > 0) THEN
+                !> Assigns grid length to correct variable.
+                n_iter = temp_int
+
+            ELSE
+                !> Warn user that default variable is being used due to invalid grid size.
+                !! Adds corresponding error message to error log.
+                CALL Add_Error_Message("Error: Number of iterations must be a positive integer.")
+                CALL Add_Warning_Message("Warning: Using default value for number of iterations .")
+                n_iter = 1000
+
+            END IF
+
+        ELSE
+            !> Set to default setting.
+            CALL Add_Warning_Message("Warning: Number of iterations not provided. Using default value.")
+            n_iter = 1000
+        END IF
+
+        IsValid = get_arg('dt', temp_real, Exists)
+        IF (IsValid .AND. Exists) THEN
+            IF (temp_int > 0) THEN
+                !> Assigns grid length to correct variable.
+                dt = temp_real
+
+            ELSE
+                !> Warn user that default variable is being used due to invalid grid size.
+                !! Adds corresponding error message to error log.
+                CALL Add_Error_Message("Error: Time step must be a positive real.")
+                CALL Add_Warning_Message("Warning: Using default value for time step.")
+                dt = 0.01_REAL64
+
+            END IF
+
+        ELSE
+            !> Terminate program due to missing argument.
+            CALL Add_Warning_Message("Warning: Time step not provided. Using default value.")
+            dt = 0.01_REAL64
         END IF
 
     END SUBROUTINE Parse_Command_Line
