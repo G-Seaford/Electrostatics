@@ -14,7 +14,7 @@ CONTAINS
     INTEGER, INTENT(INOUT) :: ierr
     INTEGER, PARAMETER :: ndims2 = 2
     INTEGER, DIMENSION(ndims2) :: sizes2, dim_ids2, sizes_ex, sizes_ey, sizes_potential, dim_ids_ex, dim_ids_ey, dim_ids_potential
-    INTEGER :: file_id, var_id_2d, var_id_ex, var_id_ey, var_id_potential, i
+    INTEGER :: file_id, var_id_2d, var_id_ex, var_id_ey, var_id_potential, i,var_id_vel,var_id_acc,var_id_rho
     CHARACTER(LEN=1), DIMENSION(ndims2) :: dims2 = (/'x', 'y'/)
 
     ! Sizes of the arrays
@@ -82,19 +82,12 @@ CONTAINS
     END IF
     PRINT*, "'position' variable defined successfully."
     
-    ierr = nf90_def_var(file_id, "velocity", NF90_REAL, dim_ids2, var_id_2d)
+    ierr = nf90_def_var(file_id, "velocity", NF90_REAL, dim_ids2, var_id_vel)
     IF (ierr /= nf90_noerr) THEN
       PRINT*, "Error defining variable velocity'': ", TRIM(nf90_strerror(ierr))
       RETURN
     END IF
     PRINT*, "'velocity' variable defined successfully."
-
-    ierr = nf90_def_var(file_id, "acceleration", NF90_REAL, dim_ids2, var_id_2d)
-    IF (ierr /= nf90_noerr) THEN
-      PRINT*, "Error defining variable acceleration'': ", TRIM(nf90_strerror(ierr))
-      RETURN
-    END IF
-    PRINT*, "'acceleration' variable defined successfully."
 
 
     ierr = nf90_def_var(file_id, "E_x", NF90_REAL, dim_ids_ex, var_id_ex)
@@ -104,12 +97,6 @@ CONTAINS
     END IF
     PRINT*, "'E_x' variable defined successfully."
 
-    ierr = nf90_def_var(file_id, "rho", NF90_REAL, dim_ids_ex, var_id_ex)
-    IF (ierr /= nf90_noerr) THEN
-      PRINT*, "Error defining variable 'rho': ", TRIM(nf90_strerror(ierr))
-      RETURN
-    END IF
-    PRINT*, "'rho' variable defined successfully."
 
     ierr = nf90_def_var(file_id, "E_y", NF90_REAL, dim_ids_ey, var_id_ey)
     IF (ierr /= nf90_noerr) THEN
@@ -141,27 +128,20 @@ CONTAINS
     END IF
     PRINT*, "'position' variable written successfully."
 
-    ! Write the rank-2 variables
-    ierr = nf90_put_var(file_id, var_id_2d, run%acceleration)
+    ierr = nf90_put_var(file_id, var_id_vel, run%velocity)
     IF (ierr /= nf90_noerr) THEN
-      PRINT*, "Error writing 'acceleration' variable: ", TRIM(nf90_strerror(ierr))
+      PRINT*, "Error writing 'velocity' variable: ", TRIM(nf90_strerror(ierr))
       RETURN
     END IF
-    PRINT*, "'acceleration' variable written successfully."
+    PRINT*, "'velocity' variable written successfully."
 
+   
     ierr = nf90_put_var(file_id, var_id_ex, run%E_x)
     IF (ierr /= nf90_noerr) THEN
       PRINT*, "Error writing 'E_x' variable: ", TRIM(nf90_strerror(ierr))
       RETURN
     END IF
     PRINT*, "'E_x' variable written successfully."
-
-    ierr = nf90_put_var(file_id, var_id_ex, run%rho)
-    IF (ierr /= nf90_noerr) THEN
-      PRINT*, "Error writing 'rho' variable: ", TRIM(nf90_strerror(ierr))
-      RETURN
-    END IF
-    PRINT*, "'rho' variable written successfully."
 
     ierr = nf90_put_var(file_id, var_id_ey, run%E_y)
     IF (ierr /= nf90_noerr) THEN
@@ -188,4 +168,3 @@ CONTAINS
   END SUBROUTINE writer
 
 END MODULE write_netcdf
-!finished
