@@ -3,9 +3,12 @@ MODULE solve_gauss_seidel
     !! @author Gianluca Seaford
     !! @version 1.0
     !! @date 2024-11-29
-    
-    IMPLICIT NONE
 
+    USE command_line
+    USE Error_Logging
+    USE ISO_FORTRAN_ENV
+    IMPLICIT NONE
+    
     !!!!!!!!!!!!!!!!!!!!!!!!!!
     !! Insert used packages !!
     !!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -15,20 +18,20 @@ MODULE solve_gauss_seidel
 
         !! Simulation Parameters
         INTEGER         :: nx, ny, n_iter
-        REAL            :: dx, dy, dt
+        REAL(REAL64)    :: dx, dy, dt
 
         !! Poisson equation data
-        REAL, DIMENSION(:,:), ALLOCATABLE   :: phi
-        REAL, DIMENSION(:,:), ALLOCATABLE   :: rho
+        REAL(REAL64), DIMENSION(:,:), ALLOCATABLE   :: phi
+        REAL(REAL64), DIMENSION(:,:), ALLOCATABLE   :: rho
 
         !! Electric field data
-        REAL, DIMENSION(:, :), ALLOCATABLE  :: Ex
-        REAL, DIMENSION(:, :), ALLOCATABLE  :: Ey
+        REAL(REAL64), DIMENSION(:, :), ALLOCATABLE  :: Ex
+        REAL(REAL64), DIMENSION(:, :), ALLOCATABLE  :: Ey
 
         !! Electron data
-        REAL, DIMENSION(:), ALLOCATABLE     :: position_x, position_y
-        REAL, DIMENSION(:), ALLOCATABLE     :: velocity_x, velocity_y
-        REAL, DIMENSION(:), ALLOCATABLE     :: acceleration_x, acceleration_y
+        REAL(REAL64), DIMENSION(:), ALLOCATABLE     :: position_x, position_y
+        REAL(REAL64), DIMENSION(:), ALLOCATABLE     :: velocity_x, velocity_y
+        REAL(REAL64), DIMENSION(:), ALLOCATABLE     :: acceleration_x, acceleration_y
 
     END TYPE GaussSeidelData
 
@@ -50,8 +53,8 @@ MODULE solve_gauss_seidel
         CHARACTER(LEN=*), INTENT(IN)            :: init_type
         INTEGER, INTENT(IN)                     :: nx, ny, n_iter
         INTEGER                                 :: i, j             !! Loop variables
-        REAL, INTENT(IN)                        :: dx, dy, dt
-        REAL                                    :: x, y             !! Position variables
+        REAL(REAL64), INTENT(IN)                :: dx, dy, dt
+        REAL(REAL64)                            :: x, y             !! Position variables
         INTEGER, INTENT(INOUT)                  :: status
 
         !> Set parameters within GaussSeidelData structure.
@@ -127,18 +130,18 @@ MODULE solve_gauss_seidel
 
         !> Initialise arrays with zero values.
         !! This is equivalent to imposing Dirichlet conditions at boundaries.
-        data%phi = 0.0
-        data%rho = 0.0
+        data%phi = 0.0_REAL64
+        data%rho = 0.0_REAL64
 
-        data%Ex = 0.0
-        data%Ey = 0.0
+        data%Ex = 0.0_REAL64
+        data%Ey = 0.0_REAL64
 
-        data%position_x = 0.0
-        data%position_y = 0.0
-        data%velocity_x = 0.0
-        data%velocity_y = 0.0
-        data%acceleration_x = 0.0
-        data%acceleration_y = 0.0
+        data%position_x = 0.0_REAL64
+        data%position_y = 0.0_REAL64
+        data%velocity_x = 0.0_REAL64
+        data%velocity_y = 0.0_REAL64
+        data%acceleration_x = 0.0_REAL64
+        data%acceleration_y = 0.0_REAL64
 
         SELECT CASE(init_type)
 
@@ -146,8 +149,8 @@ MODULE solve_gauss_seidel
                 !> Zero Gaussian peaks, with null rho.
                 !! Used for a lone charge.
 
-                data%velocity_x(0) = 0.1
-                data%velocity_y(0) = 0.1
+                data%velocity_x(0) = 0.1_REAL64
+                data%velocity_y(0) = 0.1_REAL64
 
             CASE("single")
                 !> Single Gaussian Peak.
@@ -163,7 +166,7 @@ MODULE solve_gauss_seidel
                     END DO
                 END DO        
 
-                data%position_x(0) = 0.1
+                data%position_x(0) = 0.1_REAL64
 
             CASE("double")
                 !> Double Gaussian peak.
@@ -180,7 +183,7 @@ MODULE solve_gauss_seidel
                     END DO
                 END DO
         
-                data%position_y = 0.5
+                data%position_y = 0.5_REAL64
 
         END SELECT
 
@@ -195,7 +198,7 @@ MODULE solve_gauss_seidel
 
         TYPE(GaussSeidelData), INTENT(INOUT)    :: data_in
         INTEGER, INTENT(IN)                     :: x_idx, y_idx
-        REAL                                    :: dx, dy, dx2_inv, dy2_inv, rho, phi_current, phi_xdiff, phi_ydiff, denom_inv
+        REAL(REAL64)                            :: dx, dy, dx2_inv, dy2_inv, rho, phi_current, phi_xdiff, phi_ydiff, denom_inv
 
 
         dx = data_in%dx
@@ -221,7 +224,7 @@ MODULE solve_gauss_seidel
 
         TYPE(GaussSeidelData), INTENT(INOUT)    :: data_in
         INTEGER                                 :: x_idx, y_idx
-        REAL                                    :: dx, dy, phi_xdiff, phi_ydiff
+        REAL(REAL64)                            :: dx, dy, phi_xdiff, phi_ydiff
 
         dx = data_in%dx
         dy = data_in%dy
@@ -248,7 +251,7 @@ MODULE solve_gauss_seidel
 
         TYPE(GaussSeidelData), INTENT(IN)   :: data_in
         INTEGER                             :: x_idx, y_idx, n_sites
-        REAL                                :: rho, dx, dy, dx2_inv, dy2_inv, phi_xdiff, phi_ydiff, tot_diff, e_tot, d_rms, ratio, epsilon = 1.0e-12
+        REAL(REAL64)                        :: rho, dx, dy, dx2_inv, dy2_inv, phi_xdiff, phi_ydiff, tot_diff, e_tot, d_rms, ratio, epsilon = 1.0e-12_REAL64
 
         is_converged = .FALSE.
 
@@ -256,8 +259,8 @@ MODULE solve_gauss_seidel
         dy = data_in%dy
         n_sites = data_in%nx * data_in%ny
 
-        e_tot = 0.0
-        d_rms = 0.0
+        e_tot = 0.0_REAL64
+        d_rms = 0.0_REAL64
 
         dx2_inv = 1/(dx * dx)
         dy2_inv = 1/(dy * dy)
@@ -286,11 +289,11 @@ MODULE solve_gauss_seidel
             !> Prevent division by zero.
             IF (e_tot < epsilon) THEN
                 !> True convergence achieved.
-                ratio = 0.0
+                ratio = 0.0_REAL64
             
             ELSE
                 !> Indicative of an ill-conditioned Laplacian matrix
-                ratio = HUGE(1.0)
+                ratio = HUGE(1.0_REAL64)
             END IF 
 
         ELSE 
@@ -298,7 +301,7 @@ MODULE solve_gauss_seidel
 
         END IF
 
-        IF (ratio < 0.00001) THEN
+        IF (ratio < 0.00001_REAL64) THEN
             is_converged = .TRUE.
         END IF
 
@@ -354,5 +357,87 @@ MODULE solve_gauss_seidel
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     END SUBROUTINE GaussSeidel
+
+    SUBROUTINE Display_Help()
+        !> Provides a help option for users unsure of correct inputs.
+        !! Command line arguments are stated with default values listed if argument is missing.
+
+        PRINT *, "                                                                                                  "
+        PRINT *, "                        Electrostatics [options]                                                  "
+        PRINT *, "  Options:                                                                       Default Setting: "
+        PRINT *, "                                                                                                  "
+       
+
+    RETURN
+    END SUBROUTINE Display_Help
+
+    SUBROUTINE Parse_Command_Line(problem, nx, ny, n_iter, dx, dy, dt)
+
+        CHARACTER(LEN=*), INTENT(OUT)       :: problem
+        INTEGER, INTENT(OUT)                :: nx, ny
+        INTEGER, INTENT(OUT), OPTIONAL      :: n_iter
+        REAl(REAL64), INTENT(OUT), OPTIONAL :: dx, dy, dt
+
+        INTEGER                             :: arg_count, arg_idx, temp_int
+        REAL                                :: temp_real
+        LOGICAL                             :: Exists, IsValid
+        CHARACTER(LEN=20)                   :: temp_str, arg
+
+        arg_count = COMMAND_ARGUMENT_COUNT()
+
+        DO arg_idx = 1, arg_count
+            CALL GET_COMMAND_ARGUMENT(arg_idx, arg)
+            arg = TRIM(arg)
+            IF (arg == '--help') THEN
+                !> Custom help command for command line inputs 
+                CALL Display_Help()
+                STOP
+
+            END IF
+        END DO
+
+        CALL parse_args()
+
+        IsValid = get_arg('nx', temp_int, Exists)
+        IF (IsValid .AND. Exists) THEN
+            IF (temp_int > 0) THEN
+                !> Assigns grid length to correct variable.
+                nx = temp_int
+
+            ELSE
+                !> Warn user that default variable is being used due to invalid grid size.
+                !! Adds corresponding error message to error log.
+                CALL Add_Error_Message("Error: Grid length nx must be a positive integer.")
+                ERROR STOP
+
+            END IF
+
+        ELSE
+            !> Warn user that default variable is being used.
+            CALL Add_Error_Message("Error: Grid length nx not provided.")
+            ERROR STOP
+        END IF
+
+        IsValid = get_arg('ny', temp_int, Exists)
+        IF (IsValid .AND. Exists) THEN
+            IF (temp_int > 0) THEN
+                !> Assigns grid length to correct variable.
+                nx = temp_int
+
+            ELSE
+                !> Warn user that default variable is being used due to invalid grid size.
+                !! Adds corresponding error message to error log.
+                CALL Add_Error_Message("Error: Grid length nx must be a positive integer.")
+                ERROR STOP
+
+            END IF
+
+        ELSE
+            !> Warn user that default variable is being used.
+            CALL Add_Error_Message("Error: Grid length nx not provided.")
+            ERROR STOP
+        END IF
+
+    END SUBROUTINE Parse_Command_Line
 
 END MODULE solve_gauss_seidel

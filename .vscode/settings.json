@@ -6,5 +6,6 @@
         "isconverged",
         "xdiff",
         "ydiff"
-    ]
+    ],
+    "fortran.fortls.disabled": true
 }
