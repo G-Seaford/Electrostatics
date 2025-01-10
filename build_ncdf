@@ -1,0 +1,70 @@
+#!/bin/bash
+
+
+# I deal with all extension apart from the evolution of the grid here, as that requires
+# a different run_data type, and different outputs
+
+# to run everything, just do ./buildising_ncdf with all modules in the same directory
+# and the python file there too, I did not hand in the modules that where used in Assigment 2
+# as I guess you will have them ready to use
+
+# I have also dealt with the implicit save issue I was having in the modify functions
+
+
+#List here all the f90 files to compile, separated by spaces
+#THERE MUST NOT be spaces around '=' in bash
+myprogramfiles="run_data_module.f90 netcdf_array.f90 domain_tools.f90 Movething.f90 Program.f90"
+
+
+#Name of compiled file
+outfile="outfile"
+
+
+
+
+#Name of compiler
+fc=gfortran
+#Use nf-config to grab the compile and link flags. Backticks run command and grab output
+fflags=`nf-config --fflags`
+flibs=`nf-config --flibs`
+
+#Actual compile line. Other flags etc can be added
+#Wall to check for any errors just in case
+$fc -g -Wall $fflags $myprogramfiles $flibs -o $outfile
+
+if [[ $? -ne 0 ]]; then
+    echo "Error: Compilation failed. The file '$outfile' was not created."
+    exit 1
+fi
+    
+echo "Compilation successful!"
+
+# This just checks if there are any build errors which is one of the extension tasks
+# From here I am going to run the python file that will create the png files that you can
+# look at to see thte grid of spins and the time history of the magnetisation
+
+# data is prepared to be stored in a file called saved.nc
+# now here we run the exe, modify however you would like:::
+
+./$outfile
+
+echo "."
+echo "."
+echo "."
+echo "."
+echo "Okay, that has now run and saved the data, now on to creating the viewing files with python"
+echo "Below is the ouput from the python file....."
+
+# final this is to run the python file make sure it worked
+# please make sure all files are in the same directory
+
+fc2=python3
+graphics="vis.py"
+$fc2 $graphics
+
+if [[ $? -ne 0 ]]; then
+    echo "Error: Python script '$graphics' failed to run."
+    exit 1
+fi
+
+echo "Wallah, done"
