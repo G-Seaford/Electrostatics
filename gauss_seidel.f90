@@ -1,130 +1,86 @@
-MODULE solve_gauss_seidel
+MODULE SolveGaussSeidel
     !> Solves the Poisson equation iteratively via the Gauss-Seidel method.
     !! @author Gianluca Seaford
-    !! @version 1.0
+    !! @version 2.0
     !! @date 2024-11-29
 
     USE command_line
+    USE CommonDataStructure
     USE Error_Logging
     USE ISO_FORTRAN_ENV
+    USE VelocityVerlet
+    USE write_netcdf
+
     IMPLICIT NONE
-    
-    !!!!!!!!!!!!!!!!!!!!!!!!!!
-    !! Insert used packages !!
-    !!!!!!!!!!!!!!!!!!!!!!!!!!
-
-    TYPE :: GaussSeidelData
-        !> Derived type for data storage across modules
-
-        !! Simulation Parameters
-        INTEGER         :: nx, ny, n_iter
-        REAL(REAL64)    :: dx, dy, dt
-
-        !! Poisson equation data
-        REAL(REAL64), DIMENSION(:,:), ALLOCATABLE   :: phi
-        REAL(REAL64), DIMENSION(:,:), ALLOCATABLE   :: rho
-
-        !! Electric field data
-        REAL(REAL64), DIMENSION(:, :), ALLOCATABLE  :: Ex
-        REAL(REAL64), DIMENSION(:, :), ALLOCATABLE  :: Ey
-
-        !! Electron data
-        REAL(REAL64), DIMENSION(:), ALLOCATABLE     :: position_x, position_y
-        REAL(REAL64), DIMENSION(:), ALLOCATABLE     :: velocity_x, velocity_y
-        REAL(REAL64), DIMENSION(:), ALLOCATABLE     :: acceleration_x, acceleration_y
-
-    END TYPE GaussSeidelData
 
     CONTAINS
 
-    SUBROUTINE InitialiseGaussSeidelData(data, init_type, nx, ny, n_iter, dx, dy, dt, status)
+    SUBROUTINE InitialiseCommonData(data, status)
         !> Initialises the data structure for the Gauss-Seidel method.
         !! @param[inout] data The GaussSeidelData structure to initialise.
-        !! @param[in] init_type The initialisation type.
-        !! @param[in] nx The number of grid points in the x-direction.
-        !! @param[in] ny The number of grid points in the y-direction.
-        !! @param[in] n_iter The number of iterations.
-        !! @param[in] dx The grid spacing in the x-direction.
-        !! @param[in] dy The grid spacing in the y-direction.
-        !! @param[in] dt The time step.
         !! @param[inout] status Status for error handling.
 
-        TYPE(GaussSeidelData), INTENT(INOUT)    :: data
-        CHARACTER(LEN=*), INTENT(IN)            :: init_type
-        INTEGER, INTENT(IN)                     :: nx, ny, n_iter
-        INTEGER                                 :: i, j             !! Loop variables
-        REAL(REAL64), INTENT(IN)                :: dx, dy, dt
-        REAL(REAL64)                            :: x, y             !! Position variables
-        INTEGER, INTENT(INOUT)                  :: status
+        TYPE(CommonData), INTENT(INOUT)     :: data
+        INTEGER, INTENT(INOUT)              :: status
+
+        CHARACTER(LEN=6)                    :: init_type
+        INTEGER                             :: nx, ny, n_iter, i, j, cell_x, cell_y
+        REAL(REAL64)                        :: x, y, dt
+        
+
+        CALL ParseCommandLine(init_type, nx, ny, n_iter, dt)
 
         !> Set parameters within GaussSeidelData structure.
         data%nx = nx
         data%ny = ny
         data%n_iter = n_iter
 
-        data%dx = dx
-        data%dy = dy
+        data%dx = 2 / nx
+        data%dy = 2 / ny
         data%dt = dt
 
         !> Allocate field arrays.
         ALLOCATE(data%phi(0:nx+1, 0:ny+1), STAT=status)
         IF (status /= 0) THEN
-            PRINT *, "Error allocating memory for phi"
+            CALL Add_Error_Message("Error: Failed allocating memory for phi")
             RETURN
         END IF
 
         ALLOCATE(data%rho(0:nx+1, 0:ny+1), STAT=status)
         IF (status /= 0) THEN
-            PRINT *, "Error allocating memory for rho"
+            CALL Add_Error_Message("Error: Failed allocating memory for rho")
             RETURN
         END IF
 
         ALLOCATE(data%Ex(0:nx+1, 0:ny+1), STAT=status)
         IF (status /= 0) THEN
-            PRINT *, "Error allocating memory for Ex"
+            CALL Add_Error_Message("Error: Failed allocating memory for Ex")
             RETURN
         END IF
 
         ALLOCATE(data%Ey(0:nx+1, 0:ny+1), STAT=status)
         IF (status /= 0) THEN
-            PRINT *, "Error allocating memory for Ey"
+            CALL Add_Error_Message("Error: Failed allocating memory for Ey")
             RETURN
         END IF
 
         !> Allocate particle storage arrays.
-        ALLOCATE(data%position_x(0:n_iter), STAT=status)
+        ALLOCATE(data%positions(2, 0:n_iter), STAT=status)
         IF (status /= 0) THEN
-            PRINT *, "Error allocating memory for x positions"
+            CALL Add_Error_Message("Error: Failed allocating memory for positions")
             RETURN
         END IF
 
-        ALLOCATE(data%position_y(0:n_iter), STAT=status)
+        ALLOCATE(data%velocities(2, 0:n_iter), STAT=status)
         IF (status /= 0) THEN
-            PRINT *, "Error allocating memory for y positions"
-            RETURN
-        END IF
-
-        ALLOCATE(data%velocity_x(0:n_iter), STAT=status)
-        IF (status /= 0) THEN
-            PRINT *, "Error allocating memory for x velocities"
+            CALL Add_Error_Message("Error: Failed allocating memory for velocities")
             RETURN
         END IF
         
-        ALLOCATE(data%velocity_y(0:n_iter), STAT=status)
-        IF (status /= 0) THEN
-            PRINT *, "Error allocating memory for y velocities"
-            RETURN
-        END IF
 
-        ALLOCATE(data%acceleration_x(0:n_iter), STAT=status)
+        ALLOCATE(data%accelerations(2, 0:n_iter), STAT=status)
         IF (status /= 0) THEN
-            PRINT *, "Error allocating memory for x accelerations"
-            RETURN
-        END IF
-        
-        ALLOCATE(data%acceleration_y(0:n_iter), STAT=status)
-        IF (status /= 0) THEN
-            PRINT *, "Error allocating memory for y accelerations"
+            CALL Add_Error_Message("Error: Failed allocating memory for accelerations")
             RETURN
         END IF
 
@@ -136,12 +92,9 @@ MODULE solve_gauss_seidel
         data%Ex = 0.0_REAL64
         data%Ey = 0.0_REAL64
 
-        data%position_x = 0.0_REAL64
-        data%position_y = 0.0_REAL64
-        data%velocity_x = 0.0_REAL64
-        data%velocity_y = 0.0_REAL64
-        data%acceleration_x = 0.0_REAL64
-        data%acceleration_y = 0.0_REAL64
+        data%positions = 0.0_REAL64
+        data%velocities = 0.0_REAL64
+        data%accelerations = 0.0_REAL64
 
         SELECT CASE(init_type)
 
@@ -149,8 +102,18 @@ MODULE solve_gauss_seidel
                 !> Zero Gaussian peaks, with null rho.
                 !! Used for a lone charge.
 
-                data%velocity_x(0) = 0.1_REAL64
-                data%velocity_y(0) = 0.1_REAL64
+                !> Set initial x- and y-velocity.
+                data%velocities(1:2, 0) = 0.1_REAL64
+
+                !> Set initial E-fields.
+                CALL EfieldUpdate(data)
+
+                !> Set initial acceleration
+                cell_x = FLOOR((data%positions(1,0) + 1.0_REAL64)/data%dx) + 1
+                cell_y = FLOOR((data%positions(2,0) + 1.0_REAL64)/data%dy) + 1
+
+                data%accelerations(1,0) = data%Ex(cell_x,cell_y)
+                data%accelerations(2,0) = data%Ey(cell_x,cell_y)
 
             CASE("single")
                 !> Single Gaussian Peak.
@@ -164,9 +127,20 @@ MODULE solve_gauss_seidel
         
                         data%rho(i, j) = EXP( - ( (x/0.1)**2 + (y/0.1)**2 ) )
                     END DO
-                END DO        
+                END DO
+                
+                !> Set initial E-fields.
+                CALL EfieldUpdate(data)
 
-                data%position_x(0) = 0.1_REAL64
+                !> Set initial x velocity.
+                data%positions(1,0) = 0.1_REAL64
+
+                !> Set initial acceleration
+                cell_x = FLOOR((data%positions(1,0) + 1.0_REAL64)/data%dx) + 1
+                cell_y = FLOOR((data%positions(2,0) + 1.0_REAL64)/data%dy) + 1
+
+                data%accelerations(1,0) = data%Ex(cell_x,cell_y)
+                data%accelerations(2,0) = data%Ey(cell_x,cell_y)
 
             CASE("double")
                 !> Double Gaussian peak.
@@ -182,12 +156,96 @@ MODULE solve_gauss_seidel
                                     &  + EXP(-(((x-0.75)/0.2)**2 + ((y-0.75)/0.2)**2))
                     END DO
                 END DO
-        
-                data%position_y = 0.5_REAL64
+
+                !> Set initial E-fields.
+                CALL EfieldUpdate(data)
+
+                !> Set initial y position.
+                data%positions(2,0) = 0.5_REAL64
+
+                !> Set initial acceleration
+                cell_x = FLOOR((data%positions(1,0) + 1.0_REAL64)/data%dx) + 1
+                cell_y = FLOOR((data%positions(2,0) + 1.0_REAL64)/data%dy) + 1
+
+                data%accelerations(1,0) = data%Ex(cell_x,cell_y)
+                data%accelerations(2,0) = data%Ey(cell_x,cell_y)
+
+            CASE DEFAULT
+                CALL Add_Error_Message("Error: Unknown initialisation type.")
+                CALL Print_Errors()
+
+        ERROR STOP
 
         END SELECT
 
-    END SUBROUTINE InitialiseGaussSeidelData
+    END SUBROUTINE InitialiseCommonData
+
+    SUBROUTINE CleanUpData(data)
+        TYPE(CommonData), INTENT(INOUT) :: data
+
+        INTEGER                         :: status
+
+        status = 0
+
+        !> Deallocate field arrays.
+        IF (ALLOCATED(data%phi)) THEN
+            DEALLOCATE(data%phi, STAT=status)
+            IF (status /= 0) THEN
+                CALL Add_Error_Message("Error: Failed deallocating memory for phi")
+                RETURN
+            END IF
+        END IF
+        
+        IF (ALLOCATED(data%rho)) THEN
+            DEALLOCATE(data%rho, STAT=status)
+            IF (status /= 0) THEN
+                CALL Add_Error_Message("Error: Failed deallocating memory for rho")
+                RETURN
+            END IF
+        END IF
+
+        IF (ALLOCATED(data%Ex)) THEN
+            DEALLOCATE(data%Ex, STAT=status)
+            IF (status /= 0) THEN
+                CALL Add_Error_Message("Error: Failed deallocating memory for Ex")
+                RETURN
+            END IF
+        END IF
+
+        IF (ALLOCATED(data%Ey)) THEN
+            DEALLOCATE(data%Ey, STAT=status)
+            IF (status /= 0) THEN
+                CALL Add_Error_Message("Error: Failed deallocating memory for Ey")
+                RETURN
+            END IF
+        END IF
+
+        !> Deallocate particle storage arrays.
+        IF (ALLOCATED(data%positions)) THEN
+            DEALLOCATE(data%positions, STAT=status)
+            IF (status /= 0) THEN
+                CALL Add_Error_Message("Error: Failed deallocating memory for positions")
+                RETURN
+            END IF
+        END IF
+
+        IF (ALLOCATED(data%velocities)) THEN
+            DEALLOCATE(data%velocities, STAT=status)
+            IF (status /= 0) THEN
+                CALL Add_Error_Message("Error: Failed deallocating memory for velocities")
+                RETURN
+            END IF
+        END IF
+        
+        IF (ALLOCATED(data%accelerations)) THEN
+            DEALLOCATE(data%accelerations, STAT=status)
+            IF (status /= 0) THEN
+                CALL Add_Error_Message("Error: Failed deallocating memory for accelerations")
+                RETURN
+            END IF
+        END IF
+
+    END SUBROUTINE CleanUpData
 
     SUBROUTINE PhiUpdate(data_in, x_idx, y_idx)
         !> Subroutine to update a given phi element.
@@ -196,10 +254,10 @@ MODULE solve_gauss_seidel
         !! @param[in] x_idx The x index.
         !! @param[in] y_idx The y index.
 
-        TYPE(GaussSeidelData), INTENT(INOUT)    :: data_in
-        INTEGER, INTENT(IN)                     :: x_idx, y_idx
-        REAL(REAL64)                            :: dx, dy, dx2_inv, dy2_inv, rho, phi_current, phi_xdiff, phi_ydiff, denom_inv
+        TYPE(CommonData), INTENT(INOUT)     :: data_in
+        INTEGER, INTENT(IN)                 :: x_idx, y_idx
 
+        REAL(REAL64)                        :: dx, dy, dx2_inv, dy2_inv, rho, phi_current, phi_xdiff, phi_ydiff, denom_inv
 
         dx = data_in%dx
         dy = data_in%dy
@@ -222,9 +280,10 @@ MODULE solve_gauss_seidel
         !! Uses a modified first-order 
         !! @param[inout] data_in The GaussSeidelData structure holding data.
 
-        TYPE(GaussSeidelData), INTENT(INOUT)    :: data_in
-        INTEGER                                 :: x_idx, y_idx
-        REAL(REAL64)                            :: dx, dy, phi_xdiff, phi_ydiff
+        TYPE(CommonData), INTENT(INOUT)     :: data_in
+
+        INTEGER                             :: x_idx, y_idx
+        REAL(REAL64)                        :: dx, dy, phi_xdiff, phi_ydiff
 
         dx = data_in%dx
         dy = data_in%dy
@@ -249,9 +308,11 @@ MODULE solve_gauss_seidel
         !! @param[in] data_in The GaussSeidelData structure holding data.
         !! @param[out] isconverged Logical determining whether convergence has been attained.
 
-        TYPE(GaussSeidelData), INTENT(IN)   :: data_in
-        INTEGER                             :: x_idx, y_idx, n_sites
-        REAL(REAL64)                        :: rho, dx, dy, dx2_inv, dy2_inv, phi_xdiff, phi_ydiff, tot_diff, e_tot, d_rms, ratio, epsilon = 1.0e-12_REAL64
+        TYPE(CommonData), INTENT(IN)    :: data_in
+
+        INTEGER                         :: x_idx, y_idx, n_sites
+        REAL(REAL64)                    :: rho, dx, dy, dx2_inv, dy2_inv, phi_xdiff, phi_ydiff, tot_diff, &
+                                        &  e_tot, d_rms, ratio, epsilon = 1.0e-12_REAL64
 
         is_converged = .FALSE.
 
@@ -312,11 +373,11 @@ MODULE solve_gauss_seidel
         !! updating phi at each grid point.
         !! @param[inout] data_in The GaussSeidelData structure containing the grid and field arrays.
 
-        TYPE(GaussSeidelData), INTENT(INOUT)    :: data_in
-        INTEGER                                 :: nx, ny, x_idx, y_idx
+        TYPE(CommonData), INTENT(INOUT)     :: data_in
+        INTEGER                             :: x_idx, y_idx
 
-        DO y_idx=1, ny
-            DO x_idx=1, nx
+        DO y_idx=1, data_in%ny
+            DO x_idx=1, data_in%nx
 
                 CALL PhiUpdate(data_in, x_idx, y_idx)
 
@@ -326,39 +387,56 @@ MODULE solve_gauss_seidel
 
     END SUBROUTINE SweepPhi
 
-    SUBROUTINE GaussSeidel(data_in)
+    SUBROUTINE VelocityVerletWrapper(data_in)
+        !> Wrapper to call the velocity verlet algorithm.
+        !! @param[inout] data_in The GaussSeidelData structure.
+
+        TYPE(CommonData), INTENT(INOUT)     :: data_in
+
+        CALL velocity_verlet(data_in%positions, data_in%velocities, data_in%accelerations, & 
+                           & data_in%Ex, data_in%Ey, data_in%n_iter, data_in%dx, data_in%dy, data_in%dt)
+
+    END SUBROUTINE VelocityVerletWrapper
+
+    SUBROUTINE NetCDFWriteWrapper(data_in, fname_in)
+
+        TYPE(CommonData), INTENT(IN)    :: data_in
+        CHARACTER(len=*), INTENT(IN)    :: fname_in
+
+        INTEGER                         :: idx_err
+
+        CALL writer(data_in, fname_in, idx_err)
+
+    END SUBROUTINE NetCDFWriteWrapper
+
+    SUBROUTINE SolveSystem(data_in)
         !> Subroutine to perform the Gauss-Seidel algorithm to a Poisson equation.
-        TYPE(GaussSeidelData), INTENT(INOUT)    :: data_in
-        INTEGER                                 :: t_idx
-        LOGICAL                                 :: is_converged
+        TYPE(CommonData), INTENT(INOUT)     :: data_in
+
+        INTEGER                             :: sweep_idx
+        LOGICAL                             :: is_converged
 
         is_converged = .FALSE.
+        sweep_idx = 0
 
-        DO t_idx = 1, data_in%n_iter
+        DO WHILE ( .NOT. is_converged .AND. sweep_idx < 1000)
 
-            DO WHILE ( .NOT. is_converged)
-
-                CALL SweepPhi(data_in)
-                is_converged = ConvergenceTest(data_in)
-
-            END DO
-
-            !> Update E fields once suitable phi convergence is attained.
-            CALL EfieldUpdate(data_in)
-
-            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            !! Insert velocity-verlet stuff here !!
-            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            CALL SweepPhi(data_in)
+            is_converged = ConvergenceTest(data_in)
+            sweep_idx = sweep_idx + 1
 
         END DO
 
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        !! Insert netCDF stuff here !!
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        !> Update E fields once suitable phi convergence is attained.
+        CALL EfieldUpdate(data_in)
 
-    END SUBROUTINE GaussSeidel
+        CALL VelocityVerletWrapper(data_in)
 
-    SUBROUTINE Display_Help()
+        CALL NetCDFWriteWrapper(data_in, 'Gauss-Seidel_Electrostatics.nc')
+
+    END SUBROUTINE SolveSystem
+
+    SUBROUTINE DisplayHelp()
         !> Provides a help option for users unsure of correct inputs.
         !! Command line arguments are stated with default values listed if argument is missing.
 
@@ -377,9 +455,9 @@ MODULE solve_gauss_seidel
         PRINT *, "  dt = <real64>           Time steps                                                  0.01        "
 
     RETURN
-    END SUBROUTINE Display_Help
+    END SUBROUTINE DisplayHelp
 
-    SUBROUTINE Parse_Command_Line(init_type, nx, ny, n_iter, dt)
+    SUBROUTINE ParseCommandLine(init_type, nx, ny, n_iter, dt)
 
         CHARACTER(LEN=*), INTENT(OUT)       :: init_type
         INTEGER, INTENT(OUT)                :: nx, ny
@@ -398,7 +476,7 @@ MODULE solve_gauss_seidel
             arg = TRIM(arg)
             IF (arg == '--help') THEN
                 !> Custom help command for command line inputs 
-                CALL Display_Help()
+                CALL DisplayHelp()
                 STOP
 
             END IF
@@ -425,9 +503,7 @@ MODULE solve_gauss_seidel
 
             END SELECT
 
-
         END IF
-
 
         IsValid = get_arg('nx', temp_int, Exists)
         IF (IsValid .AND. Exists) THEN
@@ -496,7 +572,7 @@ MODULE solve_gauss_seidel
 
         IsValid = get_arg('dt', temp_real, Exists)
         IF (IsValid .AND. Exists) THEN
-            IF (temp_int > 0) THEN
+            IF (temp_real > 0.0_REAL64) THEN
                 !> Assigns grid length to correct variable.
                 dt = temp_real
 
@@ -515,6 +591,6 @@ MODULE solve_gauss_seidel
             dt = 0.01_REAL64
         END IF
 
-    END SUBROUTINE Parse_Command_Line
+    END SUBROUTINE ParseCommandLine
 
-END MODULE solve_gauss_seidel
+END MODULE SolveGaussSeidel

@@ -13,7 +13,7 @@
 
 #List here all the f90 files to compile, separated by spaces
 #THERE MUST NOT be spaces around '=' in bash
-myprogramfiles="command_line.f90 common_data_structure.f90 netcdffix_array.f90 error_handler.f90 velocity_verlet.f90 gauss_seidel.f90 Main.f90"
+myprogramfiles="run_data_module.f90 netcdf_array.f90 domain_tools.f90 Movething.f90 Program.f90"
 
 
 #Name of compiled file

@@ -3,11 +3,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Specify the NetCDF file name
-file_name = "saved.nc"
+file_name = 'Gauss-Seidel_Electrostatics.nc'
 output_plot_file = "position_plot.png"  # Specify the name for the saved plot file
 
 # Initialize variables to store the arrays
-position = E_x = E_y = potential = velocity =acceleration=rho= None
+position = E_x = E_y = potential = velocity = accelerations = rho = None
 
 # Open the NetCDF file
 try:
@@ -15,41 +15,41 @@ try:
     print(f"File '{file_name}' opened successfully.\n")
 
     # Extract variables individually
-    if 'position' in dataset.variables:
-        position = dataset.variables['position'][:]
-        print(f"Extracted 'position': shape {position.shape}")
+    if 'positions' in dataset.variables:
+        position = dataset.variables['positions'][:]
+        print(f"Extracted 'positions': shape {position.shape}")
     else:
-        print("Variable 'position' not found.")
+        print("Variable 'positions' not found.")
 
-    if 'E_x' in dataset.variables:
-        E_x = dataset.variables['E_x'][:]
-        print(f"Extracted 'E_x': shape {E_x.shape}")
+    if 'Ex' in dataset.variables:
+        E_x = dataset.variables['Ex'][:]
+        print(f"Extracted 'Ex': shape {E_x.shape}")
     else:
-        print("Variable 'E_x' not found.")
+        print("Variable 'Ex' not found.")
 
-    if 'E_y' in dataset.variables:
-        E_y = dataset.variables['E_y'][:]
-        print(f"Extracted 'E_y': shape {E_y.shape}")
+    if 'Ey' in dataset.variables:
+        E_y = dataset.variables['Ey'][:]
+        print(f"Extracted 'Ey': shape {E_y.shape}")
     else:
-        print("Variable 'E_y' not found.")
+        print("Variable 'Ey' not found.")
 
-    if 'potential' in dataset.variables:
-        potential = dataset.variables['potential'][:]
-        print(f"Extracted 'potential': shape {potential.shape}")
+    if 'phi' in dataset.variables:
+        potential = dataset.variables['phi'][:]
+        print(f"Extracted 'phi': shape {potential.shape}")
     else:
-        print("Variable 'potential' not found.")
+        print("Variable 'phi' not found.")
     
-    if 'velocity' in dataset.variables:
-        velocity = dataset.variables['velocity'][:]
-        print(f"Extracted 'velocity': shape {velocity.shape}")
+    if 'velocities' in dataset.variables:
+        velocity = dataset.variables['velocities'][:]
+        print(f"Extracted 'velocities': shape {velocity.shape}")
     else:
-        print("Variable 'velocity' not found.")
+        print("Variable 'velocities' not found.")
 
-    if 'acceleration' in dataset.variables:
-        acceleration = dataset.variables['acceleration'][:]
-        print(f"Extracted 'acceleration': shape {acceleration.shape}")
+    if 'accelerations' in dataset.variables:
+        acceleration = dataset.variables['accelerations'][:]
+        print(f"Extracted 'accelerations': shape {acceleration.shape}")
     else:
-        print("Variable 'acceleration' not found.")
+        print("Variable 'accelerations' not found.")
     
     if 'rho' in dataset.variables:
         rho = dataset.variables['rho'][:]
