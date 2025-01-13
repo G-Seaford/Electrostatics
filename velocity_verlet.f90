@@ -17,21 +17,22 @@ MODULE VelocityVerlet
   SAVE
   CONTAINS
 
-  SUBROUTINE velocity_verlet(position, velocity, acceleration, E_field_x, E_field_y, num_steps, dx, dy, delta_t)
+  SUBROUTINE velocity_verlet(position, velocity, acceleration, E_field_x, E_field_y, num_steps, nx, ny, dx, dy, delta_t)
     ! charge and mass are set to 1 and so is the permitivity of free space
     ! set delta_t to 0.01
     ! Input/Output Variables
-    INTEGER, INTENT(IN) :: num_steps
+
+    INTEGER, INTENT(IN) :: num_steps, nx, ny
     REAL(REAL64), INTENT(IN) :: delta_t, dx, dy
     REAL(REAL64), DIMENSION(:,:), INTENT(IN) :: E_field_x, E_field_y
-    REAL(REAL64), DIMENSION(:,:) :: position, velocity, acceleration
+    REAL(REAL64), DIMENSION(1:2,0:num_steps) :: position, velocity, acceleration
 
     ! Local Variables
-    INTEGER :: cell_x, cell_y, step
+    INTEGER :: cell_x, cell_y, step, endsteps
 
     ! Main Velocity Verlet Loop
 
-    DO step = 0, num_steps
+    DO step = 1, num_steps - 1
   
       !! Update positions
       position(1,step+1) = position(1,step) + velocity(1,step) * delta_t + 0.5_REAL64 * acceleration(1,step) * delta_t**2
@@ -39,16 +40,30 @@ MODULE VelocityVerlet
       !print*, position(1,step)
       !print*, position(2,step)
 
-      !! Calculate acceleration 
+
+
       cell_x = FLOOR((position(1,step+1) + 1.0_REAL64)/dx) + 1
       cell_y = FLOOR((position(2,step+1) + 1.0_REAL64)/dy) + 1
 
-      acceleration(1,step+1) = E_field_x(cell_x,cell_y)
-      acceleration(2,step+1) = E_field_y(cell_x,cell_y)
-    
-      !! Calculate velocity
-      velocity(1,step+1) = velocity(1,step) + 0.5_REAL64*delta_t*(acceleration(1,step + 1)+acceleration(1,step))
-      velocity(2,step+1) = velocity(2,step) + 0.5_REAL64*delta_t*(acceleration(2,step + 1)+acceleration(2,step))
+      if ((cell_x < 1 .or. cell_x > nx) .or. (cell_y < 1 .or. cell_y > ny)) then
+        ! This will fill all the data left
+        DO endsteps = step + 1, num_steps
+          position(1,endsteps) = position(1,step)
+          position(2,endsteps) = position(2,step)
+
+          acceleration(1,endsteps) = acceleration(1,step)
+          acceleration(2,endsteps) = acceleration(2,step)
+
+          velocity(1,endsteps) =  velocity(1,step)
+          velocity(2,endsteps) =   velocity(2,step)
+        end DO
+      else
+        acceleration(1,step+1) = E_field_x(cell_x,cell_y)
+        acceleration(2,step+1) = E_field_y(cell_x,cell_y)
+
+        velocity(1,step+1) = velocity(1,step) + 0.5_REAL64*delta_t*(acceleration(1,step + 1)+acceleration(1,step))
+        velocity(2,step+1) = velocity(2,step) + 0.5_REAL64*delta_t*(acceleration(2,step + 1)+acceleration(2,step))
+      end if
 
     END DO
 

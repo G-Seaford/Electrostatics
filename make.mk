@@ -10,10 +10,19 @@ PROGRAM_FILES = common_data_structure.f90 command_line.f90 error_handler.f90 vel
 OUTFILE = test
 
 # Compiler flags: Use nf-config to grab the compile flags
-FFLAGS = -g $(shell nf-config --fflags) -std=f2018 -Wall
+FFLAGS = -g $(shell nf-config --fflags) -std=f2018 -Wall -fcheck=all
 
 # Linker flags: Use nf-config to grab the link flags
 FLIBS = $(shell nf-config --flibs)
+
+# Detect Operating System
+UNAME_S := $(shell uname -s)
+
+# Remove duplicate '-lnetcdf' on macOS if nf-config provides it twice
+ifeq ($(UNAME_S),Darwin)
+    # Remove the second occurrence of '-lnetcdf'
+    FLIBS := $(firstword $(FLIBS)) $(filter-out -lnetcdf,$(FLIBS))
+endif
 
 # Derived object files
 OBJECTS = $(PROGRAM_FILES:.f90=.o)
@@ -35,3 +44,4 @@ clean:
 
 # Phony targets
 .PHONY: all clean
+

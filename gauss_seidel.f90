@@ -35,8 +35,8 @@ MODULE SolveGaussSeidel
         data%ny = ny
         data%n_iter = n_iter
 
-        data%dx = 2 / nx
-        data%dy = 2 / ny
+        data%dx = 2.0 / nx
+        data%dy = 2.0 / ny
         data%dt = dt
 
         !> Allocate field arrays.
@@ -46,39 +46,39 @@ MODULE SolveGaussSeidel
             RETURN
         END IF
 
-        ALLOCATE(data%rho(0:nx+1, 0:ny+1), STAT=status)
+        ALLOCATE(data%rho(1:nx, 1:ny), STAT=status)
         IF (status /= 0) THEN
             CALL Add_Error_Message("Error: Failed allocating memory for rho")
             RETURN
         END IF
 
-        ALLOCATE(data%Ex(0:nx+1, 0:ny+1), STAT=status)
+        ALLOCATE(data%Ex(1:nx, 1:ny), STAT=status)
         IF (status /= 0) THEN
             CALL Add_Error_Message("Error: Failed allocating memory for Ex")
             RETURN
         END IF
 
-        ALLOCATE(data%Ey(0:nx+1, 0:ny+1), STAT=status)
+        ALLOCATE(data%Ey(1:nx, 1:ny), STAT=status)
         IF (status /= 0) THEN
             CALL Add_Error_Message("Error: Failed allocating memory for Ey")
             RETURN
         END IF
 
         !> Allocate particle storage arrays.
-        ALLOCATE(data%positions(2, 0:n_iter), STAT=status)
+        ALLOCATE(data%positions(1:2, 0:n_iter), STAT=status)
         IF (status /= 0) THEN
             CALL Add_Error_Message("Error: Failed allocating memory for positions")
             RETURN
         END IF
 
-        ALLOCATE(data%velocities(2, 0:n_iter), STAT=status)
+        ALLOCATE(data%velocities(1:2, 0:n_iter), STAT=status)
         IF (status /= 0) THEN
             CALL Add_Error_Message("Error: Failed allocating memory for velocities")
             RETURN
         END IF
         
 
-        ALLOCATE(data%accelerations(2, 0:n_iter), STAT=status)
+        ALLOCATE(data%accelerations(1:2, 0:n_iter), STAT=status)
         IF (status /= 0) THEN
             CALL Add_Error_Message("Error: Failed allocating memory for accelerations")
             RETURN
@@ -394,7 +394,8 @@ MODULE SolveGaussSeidel
         TYPE(CommonData), INTENT(INOUT)     :: data_in
 
         CALL velocity_verlet(data_in%positions, data_in%velocities, data_in%accelerations, & 
-                           & data_in%Ex, data_in%Ey, data_in%n_iter, data_in%dx, data_in%dy, data_in%dt)
+                           & data_in%Ex, data_in%Ey, data_in%n_iter, data_in %nx, data_in%ny, &
+                           & data_in%dx, data_in%dy, data_in%dt)
 
     END SUBROUTINE VelocityVerletWrapper
 
