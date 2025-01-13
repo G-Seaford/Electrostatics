@@ -32,15 +32,13 @@ MODULE VelocityVerlet
 
     ! Main Velocity Verlet Loop
 
-    DO step = 1, num_steps - 1
+    DO step = 0, num_steps - 1
   
       !! Update positions
       position(1,step+1) = position(1,step) + velocity(1,step) * delta_t + 0.5_REAL64 * acceleration(1,step) * delta_t**2
       position(2,step+1) = position(2,step) + velocity(2,step) * delta_t + 0.5_REAL64 * acceleration(2,step) * delta_t**2 
       !print*, position(1,step)
       !print*, position(2,step)
-
-
 
       cell_x = FLOOR((position(1,step+1) + 1.0_REAL64)/dx) + 1
       cell_y = FLOOR((position(2,step+1) + 1.0_REAL64)/dy) + 1
