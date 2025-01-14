@@ -56,8 +56,8 @@ MODULE VelocityVerlet
           velocity(2,endsteps) =   velocity(2,step)
         end DO
       else
-        acceleration(1,step+1) = E_field_x(cell_x,cell_y)
-        acceleration(2,step+1) = E_field_y(cell_x,cell_y)
+        acceleration(1,step+1) = -1.0 * E_field_x(cell_x,cell_y)
+        acceleration(2,step+1) = -1.0 * E_field_y(cell_x,cell_y)
 
         velocity(1,step+1) = velocity(1,step) + 0.5_REAL64*delta_t*(acceleration(1,step + 1)+acceleration(1,step))
         velocity(2,step+1) = velocity(2,step) + 0.5_REAL64*delta_t*(acceleration(2,step + 1)+acceleration(2,step))
