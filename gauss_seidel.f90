@@ -112,8 +112,8 @@ MODULE SolveGaussSeidel
                 cell_x = FLOOR((data%positions(1,0) + 1.0_REAL64)/data%dx) + 1
                 cell_y = FLOOR((data%positions(2,0) + 1.0_REAL64)/data%dy) + 1
 
-                data%accelerations(1,0) = data%Ex(cell_x,cell_y)
-                data%accelerations(2,0) = data%Ey(cell_x,cell_y)
+                data%accelerations(1,0) = -1.0 * data%Ex(cell_x,cell_y)
+                data%accelerations(2,0) = -1.0 * data%Ey(cell_x,cell_y)
 
             CASE("single")
                 !> Single Gaussian Peak.
@@ -139,8 +139,8 @@ MODULE SolveGaussSeidel
                 cell_x = FLOOR((data%positions(1,0) + 1.0_REAL64)/data%dx) + 1
                 cell_y = FLOOR((data%positions(2,0) + 1.0_REAL64)/data%dy) + 1
 
-                data%accelerations(1,0) = data%Ex(cell_x,cell_y)
-                data%accelerations(2,0) = data%Ey(cell_x,cell_y)
+                data%accelerations(1,0) = -1.0 * data%Ex(cell_x,cell_y)
+                data%accelerations(2,0) = -1.0 * data%Ey(cell_x,cell_y)
 
             CASE("double")
                 !> Double Gaussian peak.
@@ -167,8 +167,8 @@ MODULE SolveGaussSeidel
                 cell_x = FLOOR((data%positions(1,0) + 1.0_REAL64)/data%dx) + 1
                 cell_y = FLOOR((data%positions(2,0) + 1.0_REAL64)/data%dy) + 1
 
-                data%accelerations(1,0) = data%Ex(cell_x,cell_y)
-                data%accelerations(2,0) = data%Ey(cell_x,cell_y)
+                data%accelerations(1,0) = -1.0 * data%Ex(cell_x,cell_y)
+                data%accelerations(2,0) = -1.0 * data%Ey(cell_x,cell_y)
 
             CASE DEFAULT
                 CALL Add_Error_Message("Error: Unknown initialisation type.")
