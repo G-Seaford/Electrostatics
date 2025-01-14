@@ -1,5 +1,7 @@
 MODULE SolveGaussSeidel
     !> Solves the Poisson equation iteratively via the Gauss-Seidel method.
+    !! Uses the Velocity Verlet algorithm by Facundo Costa to update positions, accelerations and velocities.
+    !! Writes data to a NetCDF file for plotting in external software.
     !! @author Gianluca Seaford
     !! @version 2.0
     !! @date 2024-11-29
@@ -17,7 +19,7 @@ MODULE SolveGaussSeidel
 
     SUBROUTINE InitialiseCommonData(data, status)
         !> Initialises the data structure for the Gauss-Seidel method.
-        !! @param[inout] data The GaussSeidelData structure to initialise.
+        !! @param[inout] data CommonData structure to initialise.
         !! @param[inout] status Status for error handling.
 
         TYPE(CommonData), INTENT(INOUT)     :: data
@@ -30,7 +32,7 @@ MODULE SolveGaussSeidel
 
         CALL ParseCommandLine(init_type, nx, ny, n_iter, dt)
 
-        !> Set parameters within GaussSeidelData structure.
+        !> Set parameters within CommonData structure.
         data%nx = nx
         data%ny = ny
         data%n_iter = n_iter
@@ -40,48 +42,60 @@ MODULE SolveGaussSeidel
         data%dt = dt
 
         !> Allocate field arrays.
+        !! If an error is detected, the CleanUpData subroutine
+        !! is called to deallocate allocated arrays.
+
         ALLOCATE(data%phi(0:nx+1, 0:ny+1), STAT=status)
         IF (status /= 0) THEN
             CALL Add_Error_Message("Error: Failed allocating memory for phi")
-            RETURN
+            CALL CleanUpData(data)
+            ERROR STOP
         END IF
 
         ALLOCATE(data%rho(1:nx, 1:ny), STAT=status)
         IF (status /= 0) THEN
             CALL Add_Error_Message("Error: Failed allocating memory for rho")
-            RETURN
+            CALL CleanUpData(data)
+            ERROR STOP
         END IF
 
         ALLOCATE(data%Ex(1:nx, 1:ny), STAT=status)
         IF (status /= 0) THEN
             CALL Add_Error_Message("Error: Failed allocating memory for Ex")
-            RETURN
+            CALL CleanUpData(data)
+            ERROR STOP
         END IF
 
         ALLOCATE(data%Ey(1:nx, 1:ny), STAT=status)
         IF (status /= 0) THEN
             CALL Add_Error_Message("Error: Failed allocating memory for Ey")
-            RETURN
+            CALL CleanUpData(data)
+            ERROR STOP
         END IF
 
         !> Allocate particle storage arrays.
+        !! If an error is detected, the CleanUpData subroutine
+        !! is called to deallocate allocated arrays.
+
         ALLOCATE(data%positions(1:2, 0:n_iter), STAT=status)
         IF (status /= 0) THEN
             CALL Add_Error_Message("Error: Failed allocating memory for positions")
-            RETURN
+            CALL CleanUpData(data)
+            ERROR STOP
         END IF
 
         ALLOCATE(data%velocities(1:2, 0:n_iter), STAT=status)
         IF (status /= 0) THEN
             CALL Add_Error_Message("Error: Failed allocating memory for velocities")
-            RETURN
+            CALL CleanUpData(data)
+            ERROR STOP
         END IF
         
-
         ALLOCATE(data%accelerations(1:2, 0:n_iter), STAT=status)
         IF (status /= 0) THEN
             CALL Add_Error_Message("Error: Failed allocating memory for accelerations")
-            RETURN
+            CALL CleanUpData(data)
+            ERROR STOP
         END IF
 
         !> Initialise arrays with zero values.
@@ -114,6 +128,8 @@ MODULE SolveGaussSeidel
 
                 data%accelerations(1,0) = -1.0 * data%Ex(cell_x,cell_y)
                 data%accelerations(2,0) = -1.0 * data%Ey(cell_x,cell_y)
+                
+                RETURN
 
             CASE("single")
                 !> Single Gaussian Peak.
@@ -141,6 +157,8 @@ MODULE SolveGaussSeidel
 
                 data%accelerations(1,0) = -1.0 * data%Ex(cell_x,cell_y)
                 data%accelerations(2,0) = -1.0 * data%Ey(cell_x,cell_y)
+
+                RETURN
 
             CASE("double")
                 !> Double Gaussian peak.
@@ -170,11 +188,13 @@ MODULE SolveGaussSeidel
                 data%accelerations(1,0) = -1.0 * data%Ex(cell_x,cell_y)
                 data%accelerations(2,0) = -1.0 * data%Ey(cell_x,cell_y)
 
+                RETURN
+
             CASE DEFAULT
                 CALL Add_Error_Message("Error: Unknown initialisation type.")
                 CALL Print_Errors()
 
-        ERROR STOP
+                ERROR STOP
 
         END SELECT
 
@@ -245,12 +265,14 @@ MODULE SolveGaussSeidel
             END IF
         END IF
 
+        CALL Print_Errors()
+
     END SUBROUTINE CleanUpData
 
     SUBROUTINE PhiUpdate(data_in, x_idx, y_idx)
         !> Subroutine to update a given phi element.
         !! Calculates the second-order partial derivatives via a central finite difference method.
-        !! @param[inout] data_in The GaussSeidelData structure holding data.
+        !! @param[inout] data_in CommonData structure holding data.
         !! @param[in] x_idx The x index.
         !! @param[in] y_idx The y index.
 
@@ -278,7 +300,7 @@ MODULE SolveGaussSeidel
     SUBROUTINE EfieldUpdate(data_in)
         !> Subroutine to update the electric field components in Ex and Ey.
         !! Uses a modified first-order 
-        !! @param[inout] data_in The GaussSeidelData structure holding data.
+        !! @param[inout] data_in CommonData structure holding data.
 
         TYPE(CommonData), INTENT(INOUT)     :: data_in
 
@@ -305,7 +327,7 @@ MODULE SolveGaussSeidel
     LOGICAL FUNCTION ConvergenceTest(data_in) RESULT(is_converged)
         !> Function to test whether the convergence criterion is achieved.
         !! Uses the ratio of the total error to rms distance to evaluate convergence.
-        !! @param[in] data_in The GaussSeidelData structure holding data.
+        !! @param[in] data_in CommonData structure holding data.
         !! @param[out] isconverged Logical determining whether convergence has been attained.
 
         TYPE(CommonData), INTENT(IN)    :: data_in
@@ -347,22 +369,28 @@ MODULE SolveGaussSeidel
         d_rms = SQRT(d_rms / n_sites)
 
         IF (d_rms < epsilon) THEN
-            !> Prevent division by zero.
+            !> Prevent singularities by not dividing by suitably small d_rms values.
+
             IF (e_tot < epsilon) THEN
                 !> True convergence achieved.
+                !! Because both the total error and RMS error ers suitably small.
                 ratio = 0.0_REAL64
             
             ELSE
-                !> Indicative of an ill-conditioned Laplacian matrix
+                !> Indicative of an ill-conditioned Laplacian matrix.
+                !! Since the total error is significantly larger than the RMS error.
                 ratio = HUGE(1.0_REAL64)
             END IF 
 
         ELSE 
+            !> Evaluate the ratio of the total error to the RMS distance
             ratio = e_tot / d_rms
 
         END IF
 
         IF (ratio < 0.00001_REAL64) THEN
+            !> Check convergence criterion.
+            !! e_tot/d_rms < 10^-5.
             is_converged = .TRUE.
         END IF
 
@@ -371,7 +399,7 @@ MODULE SolveGaussSeidel
     SUBROUTINE SweepPhi(data_in)
         !> Performs a Gauss–Seidel sweep over the entire phi array,
         !! updating phi at each grid point.
-        !! @param[inout] data_in The GaussSeidelData structure containing the grid and field arrays.
+        !! @param[inout] data_in CommonData structure containing the grid and field arrays.
 
         TYPE(CommonData), INTENT(INOUT)     :: data_in
         INTEGER                             :: x_idx, y_idx
@@ -389,7 +417,7 @@ MODULE SolveGaussSeidel
 
     SUBROUTINE VelocityVerletWrapper(data_in)
         !> Wrapper to call the velocity verlet algorithm.
-        !! @param[inout] data_in The GaussSeidelData structure.
+        !! @param[inout] data_in CommonData structure.
 
         TYPE(CommonData), INTENT(INOUT)     :: data_in
 
@@ -400,6 +428,9 @@ MODULE SolveGaussSeidel
     END SUBROUTINE VelocityVerletWrapper
 
     SUBROUTINE NetCDFWriteWrapper(data_in, fname_in)
+        !> Wrapper to call the NetCDF writing function.
+        !! @param[in] data_in CommonData structure.
+        !! @param[in] fname_in Name for the netCDF file.
 
         TYPE(CommonData), INTENT(IN)    :: data_in
         CHARACTER(len=*), INTENT(IN)    :: fname_in
@@ -454,8 +485,10 @@ MODULE SolveGaussSeidel
         PRINT *, "  ny = <integer>          Y-grid length                                                50         "
         PRINT *, "  n_iter = <integer>      Number of iterations                                        1000        "
         PRINT *, "  dt = <real64>           Time steps                                                  0.01        "
+        PRINT *, "                                                                                                  "
 
     RETURN
+
     END SUBROUTINE DisplayHelp
 
     SUBROUTINE ParseCommandLine(init_type, nx, ny, n_iter, dt)
@@ -524,6 +557,7 @@ MODULE SolveGaussSeidel
         ELSE
             !> Terminate program due to missing argument.
             CALL Add_Error_Message("Error: Grid length nx not provided.")
+            CALL DisplayHelp()
             CALL Print_Errors()
             ERROR STOP
         END IF
@@ -538,6 +572,7 @@ MODULE SolveGaussSeidel
                 !> Warn user that default variable is being used due to invalid grid size.
                 !! Adds corresponding error message to error log.
                 CALL Add_Error_Message("Error: Grid length ny must be a positive integer.")
+                CALL DisplayHelp()
                 CALL Print_Errors()
                 ERROR STOP
 
@@ -546,6 +581,7 @@ MODULE SolveGaussSeidel
         ELSE
             !> Terminate program due to missing argument.
             CALL Add_Error_Message("Error: Grid length ny not provided.")
+            CALL DisplayHelp()
             CALL Print_Errors()
             ERROR STOP
         END IF
