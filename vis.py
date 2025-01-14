@@ -1,11 +1,17 @@
 import netCDF4 as nc
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib import cm  # For color mapping
+from matplotlib.animation import FuncAnimation
+# By facu
 
-# Specify the NetCDF file name
 file_name = 'Gauss-Seidel_Electrostatics.nc'
 output_plot_file = "position_plot.png"  # Specify the name for the saved plot file
-
+output_ex_plot_file = "Ex_color_plot.png"  # Specify the name for the saved E_x color plot file
+output_ey_plot_file = "Ey_color_plot.png"
+output_rho_plot_file = "rho_color_plot.png"
+output_pot_plot_file = "pot_color_plot.png"
+output_animation_file = "particle_motion_simulation.mp4"  # Output animation file
 # Initialize variables to store the arrays
 position = E_x = E_y = potential = velocity = accelerations = rho = None
 
@@ -80,25 +86,94 @@ try:
     if rho is not None:
         print(f"rho array: shape {rho.shape}")
     
-    # All the variables are here now
-    # Plot position using the first axis vs second axis
+    # All the variables are here now for our use
     if position is not None:
-        # Assuming 'position' is a 2D array and we are plotting the first axis vs the second axis.
-        x = position[:, 0]  # Taking the first column (axis 1)
-        y = position[:, 1]  # Taking the second column (axis 2)
+        x = position[:, 0]
+        y = position[:, 1]
+
+        # Color mapping by index
+        num_points = len(x)
+        colors = cm.jet(np.linspace(0, 1, num_points))  # Gradient color map
 
         plt.figure(figsize=(8, 6))
-        plt.plot(x, y, marker='o', linestyle='-', color='b')
-        plt.title("Position Plot")
+        plt.scatter(x, y, c=range(num_points), cmap='viridis', s=20)
+        plt.colorbar(label="# iteration")
+        plt.title("Particle Positions")
         plt.xlabel("Position (Axis 1)")
         plt.ylabel("Position (Axis 2)")
+        plt.xlim(-1, 1)
+        plt.ylim(-1, 1)
         plt.grid(True)
 
-        # Save the plot to a file instead of showing it
+        # Save the plot
         plt.savefig(output_plot_file)
-        print(f"Plot saved as '{output_plot_file}'.")
+        print(f"Position scatter plot saved as '{output_plot_file}'.")
+    if E_x is not None:
+        plt.figure(figsize=(8, 6))
+        plt.imshow(E_x, cmap='viridis', origin='lower', extent=(-1, 1, -1, 1))
+        plt.colorbar(label="E_x Field")
+        plt.title("E_x Field Color Plot")
+        plt.xlabel("X")
+        plt.ylabel("Y")
+        plt.grid(False)
+
+        # Save the color plot
+        plt.savefig(output_ex_plot_file)
+        print(f"E_x field color plot saved as '{output_ex_plot_file}'.")
+    else:
+        print("E_x data not available for plotting.")
+    if E_y is not None:
+        plt.figure(figsize=(8, 6))
+        plt.imshow(E_y, cmap='viridis', origin='lower', extent=(-1, 1, -1, 1))
+        plt.colorbar(label="E_y Field")
+        plt.title("E_y Field Color Plot")
+        plt.xlabel("X")
+        plt.ylabel("Y")
+        plt.grid(False)
+
+        # Save the color plot
+        plt.savefig(output_ey_plot_file)
+        print(f"E_x field color plot saved as '{output_ey_plot_file}'.")
+    else:
+        print("E_x data not available for plotting.")
+    if rho is not None:
+        plt.figure(figsize=(8, 6))
+        plt.imshow(rho, cmap='viridis', origin='lower', extent=(-1, 1, -1, 1))
+        plt.colorbar(label="rho")
+        plt.title("rho Plot")
+        plt.xlabel("X")
+        plt.ylabel("Y")
+        plt.grid(False)
+
+        # Save the color plot
+        plt.savefig(output_rho_plot_file)
+        print(f"rho field color plot saved as '{output_rho_plot_file}'.")
+    else:
+        print("rho data not available for plotting.")
+
+    if potential is not None:
+        plt.figure(figsize=(8, 6))
+        plt.imshow(potential, cmap='viridis', origin='lower', extent=(-1, 1, -1, 1))
+        plt.colorbar(label="rho")
+        plt.title("potential Plot")
+        plt.xlabel("X")
+        plt.ylabel("Y")
+        plt.grid(False)
+
+        # Save the color plot
+        plt.savefig(output_pot_plot_file)
+        print(f"potential color plot saved as '{output_pot_plot_file}'.")
+    else:
+        print("potential data not available for plotting.")
+    
+
+    
 
 except FileNotFoundError:
     print(f"Error: File '{file_name}' not found.")
 except Exception as e:
     print(f"An error occurred: {e}")
+
+print(E_x)
+
+print(position[1,1])
