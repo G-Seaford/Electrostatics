@@ -26,12 +26,15 @@ This project implements a Gauss–Seidel solver for electrostatic problems in Fo
      ```bash
      make -f compile_fortran.mk
      ```
+     
   2. Runs the compiled executable with various command-line arguments (including defaults for `nx=100`, `ny=100`, `problem=single`).
+     
   3. Invokes:
      ```bash
      python3 vis.py
      ```
      for visualisation.
+     
   4. Cleans up build artefacts by calling:
      ```bash
      make clean -f compile_fortran.mk
