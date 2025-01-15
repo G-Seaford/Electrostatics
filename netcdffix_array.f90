@@ -1,8 +1,6 @@
 MODULE write_netcdf
-  !> Module to write dada to a netCDF file
-  !! @author Facundo Costa
-  !! @version 1.4
-
+  ! Module to write data to a netCDF file, which when will then read after
+  ! by facu
   USE CommonDataStructure
   USE ISO_FORTRAN_ENV
   USE netcdf
@@ -17,31 +15,20 @@ CONTAINS
     INTEGER, INTENT(INOUT) :: ierr
     INTEGER, PARAMETER :: ndims2 = 2
     INTEGER, DIMENSION(ndims2) :: sizes2, dim_ids2, sizes_ex, sizes_ey, sizes_phi, dim_ids_ex, dim_ids_ey, dim_ids_phi
-    INTEGER :: file_id, var_id_2d, var_id_ex, var_id_ey, var_id_phi, i,var_id_vel,var_id_acc,var_id_rho, i_idx, j_idx
+    INTEGER :: file_id, var_id_2d, var_id_ex, var_id_ey, var_id_phi, i,var_id_vel,var_id_acc,var_id_rho
     CHARACTER(LEN=1), DIMENSION(ndims2) :: dims2 = (/'x', 'y'/)
-
-    REAL(REAL64), DIMENSION(run%nx, run%ny) :: phi
-
-    DO j_idx = 1, run%ny
-      DO i_idx = 1, run%nx
-
-        !> Eliminate the ghost cells for phi.
-        phi(i_idx, j_idx) = run%phi(i_idx, j_idx)
-
-      END DO
-    END DO
 
     ! Sizes of the arrays
     sizes2 = SHAPE(run%positions)
     sizes_ex = SHAPE(run%Ex)
     sizes_ey = SHAPE(run%Ey)
-    sizes_phi = SHAPE(phi)
+    sizes_phi = SHAPE(run%phi)
 
-    ! Debug: Print the sizes of arrays before writing
-    PRINT*, "Sizes of position (2D array): ", sizes2
-    PRINT*, "Sizes of E_x (2D array): ", sizes_ex
-    PRINT*, "Sizes of E_y (2D array): ", sizes_ey
-    PRINT*, "Sizes of phi (2D array): ", sizes_phi
+    ! Debugging so Print the sizes of arrays before writing
+    !PRINT*, "Sizes of position (2D array): ", sizes2
+    !PRINT*, "Sizes of E_x (2D array): ", sizes_ex
+    !PRINT*, "Sizes of E_y (2D array): ", sizes_ey
+    !PRINT*, "Sizes of phi (2D array): ", sizes_phi
 
     ! Create the file, overwriting if it exists, because this can be run multiple times
     ierr = nf90_create(filename, NF90_CLOBBER, file_id)
@@ -51,7 +38,7 @@ CONTAINS
     END IF
     PRINT*, "File created successfully."
 
-    ! Define dimensions for the rank-2 (2D arrays like position, Ex, Ey, phi)
+    ! Define dimensions for accel,position,velo
     DO i = 1, ndims2
       ierr = nf90_def_dim(file_id, dims2(i), sizes2(i), dim_ids2(i))
       IF (ierr /= nf90_noerr) THEN
@@ -59,7 +46,6 @@ CONTAINS
         RETURN
       END IF
     END DO
-    PRINT*, "Dimensions for positions defined successfully."
 
     DO i = 1, ndims2
       ierr = nf90_def_dim(file_id, dims2(i) // "_ex", sizes_ex(i), dim_ids_ex(i))
@@ -68,7 +54,6 @@ CONTAINS
         RETURN
       END IF
     END DO
-    PRINT*, "Dimensions for Ex defined successfully."
     
 
     DO i = 1, ndims2
@@ -78,7 +63,6 @@ CONTAINS
         RETURN
       END IF
     END DO
-    PRINT*, "Dimensions for Ey defined successfully."
 
     DO i = 1, ndims2
       ierr = nf90_def_dim(file_id, dims2(i) // "_pot", sizes_phi(i), dim_ids_phi(i))
@@ -87,10 +71,12 @@ CONTAINS
         RETURN
       END IF
     END DO
-    PRINT*, "Dimensions for phi defined successfully."
+
+    ! I stopped defining the dimension for every variable as lots have the sames ones
 
     ! Define the rank-2 variables
 
+    ! rho has same dim as E_x so just re-used this, else I would not do this
     ierr = nf90_def_var(file_id, "rho", NF90_REAL, dim_ids_ex, var_id_rho)
     IF (ierr /= nf90_noerr) THEN
       PRINT*, "Error defining variable 'rho': ", TRIM(nf90_strerror(ierr))
@@ -98,6 +84,7 @@ CONTAINS
     END IF
     PRINT*, "'rho' variable defined successfully."
 
+    
     ierr = nf90_def_var(file_id, "phi", NF90_REAL, dim_ids_phi, var_id_phi)
     IF (ierr /= nf90_noerr) THEN
       PRINT*, "Error defining variable 'phi': ", TRIM(nf90_strerror(ierr))
@@ -156,7 +143,7 @@ CONTAINS
     END IF
     PRINT*, "'rho' variable written successfully."
 
-    ierr = nf90_put_var(file_id, var_id_phi, phi)
+    ierr = nf90_put_var(file_id, var_id_phi, run%phi)
     IF (ierr /= nf90_noerr) THEN
       PRINT*, "Error writing 'phi' variable: ", TRIM(nf90_strerror(ierr))
       RETURN
