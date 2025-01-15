@@ -10,7 +10,7 @@ This project implements a Gauss–Seidel solver for electrostatic problems in Fo
 ## Requirements
 
 - **Fortran compiler** (e.g., `gfortran`) **with netCDF support**  
-- **Python 3.x** with required libraries (e.g., `matplotlib`, `numpy`, `netCDF4`)  
+- **Python 3.x** with required libraries (`matplotlib`, `numpy`, `netCDF4`)  
 - **Make** utility (to build the Fortran code)
 
 ---
