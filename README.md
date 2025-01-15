@@ -1,28 +1,49 @@
 # Electrostatics
-Electrostatics Repository for PX913
 
-Authors: Gianluca Seaford & Facundo Costa
+**Electrostatics Repository for PX913**  
+**Authors**: Gianluca Seaford & Facundo Costa
 
-This project implements a Gauss–Seidel solver for electrostatic problems in Fortran, along with a Python script for visualising the results. A makefile is used to compile the Fortran code and a bash script (run_code.sh) is used to implement the workflow.
+This project implements a Gauss–Seidel solver for electrostatic problems in Fortran, along with a Python script for visualising the results. A makefile is used to compile the Fortran code, and a bash script (`run_code.sh`) is used to implement the workflow.
 
-Requirements:
-    * Fortran compiler (e.g., gfortran) with netCDF support.
-    * Python 3.x with required libraries (e.g., matplotlib, numpy, netCDF4).
-    * Make utility (to build the Fortran code).
+---
 
-Files:
-    * compile_fortran.mk: A Makefile that defines how to compile and link the Fortran source files into an   executable called Electrostatics. It also provides a clean target to remove build artefacts.
+## Requirements
 
-    * run_code.sh: A bash script that:
-        - Compiles the Fortran code by calling 'make -f compile_fortran.mk'.
-        - Runs the compiled executable with various command-line arguments (including defaults for nx=100, ny=100, problem=single).
-        - Invokes python3 vis.py for visualisation.
-        - Cleans up build artefacts by calling 'make clean -f compile_fortran.mk'.
+- **Fortran compiler** (e.g., `gfortran`) **with netCDF support**  
+- **Python 3.x** with required libraries (e.g., `matplotlib`, `numpy`, `netCDF4`)  
+- **Make** utility (to build the Fortran code)
 
-    * vis.py: A Python script for visualising the output (e.g., reading .nc files and producing plots).
+---
 
-Usage:
-    * Compile & Run with Defaults:
+## Files
+
+- **`compile_fortran.mk`**  
+  A Makefile that defines how to compile and link the Fortran source files into an executable called `Electrostatics`. It also provides a `clean` target to remove build artefacts.
+
+- **`run_code.sh`**  
+  A bash script that:
+  1. Compiles the Fortran code by calling:
+     ```bash
+     make -f compile_fortran.mk
+     ```
+  2. Runs the compiled executable with various command-line arguments (including defaults for `nx=100`, `ny=100`, `problem=single`).
+  3. Invokes:
+     ```bash
+     python3 vis.py
+     ```
+     for visualisation.
+  4. Cleans up build artefacts by calling:
+     ```bash
+     make clean -f compile_fortran.mk
+     ```
+
+- **`vis.py`**  
+  A Python script for visualising the output (e.g., reading `.nc` files and producing plots).
+
+---
+
+## Usage
+** Compile & Run with Defaults: **
         ./run_code.sh
 
     This will compile the code and run './Electrostatics nx=100 ny=100 problem=single' before calling the python3 'vis.py' visualisation script and cleaning up any artifacts from the executable construction.
