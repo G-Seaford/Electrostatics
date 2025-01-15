@@ -43,20 +43,21 @@ This project implements a Gauss–Seidel solver for electrostatic problems in Fo
 ---
 
 ## Usage
-** Compile & Run with Defaults: **
-        ./run_code.sh
+
+- ** `Compile & Run with Defaults:` **
+      ./run_code.sh
 
     This will compile the code and run './Electrostatics nx=100 ny=100 problem=single' before calling the python3 'vis.py' visualisation script and cleaning up any artifacts from the executable construction.
 
-    * Request Help:
+- ** `Request Help:` **
         ./run_code.sh --help
 
     For help with command line arguments run the above line. The script will compile the code, run './Electrostatics --help' before displaying the help window and cleaning up any artifacts from the executable construction.
 
-    * Custom Parameters:
+- ** `Custom Parameters:` **
 
     You can override any or all of the default parameters, and add additional parameters. The parameters available are given by the '--help' menu.
 
-    * Cleaning Up:
+- ** `Cleaning Up:` **
 
     In normal operation, the script automatically cleans when it completes. If you simply wish to remove compiled files manually, you can run 'make -f compile_fortran.mk clean' to remove the Electrostatics executable and any artifacts from the executable construction.
