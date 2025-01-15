@@ -1,12 +1,15 @@
-# Makefile for compiling the Gauss-Seidel data with command line arguments,
-# running the visualisation code before cleaning up executables.
+# Makefile for compiling the fortran code.
+# File can also run the full routine, including visualisation, 
+# with the command make RunAllFiles -f compile_fortran.mk
+# although using the 'run_code.sh' bash script is advised.
+
 # @author Gianluca Seaford
 
 #####################################################
 # 				Simulation Parameters				#
 #####################################################
 
-command_line_arguments := nx=100 ny=100 problem=double
+command_line_arguments := nx=100 ny=100 problem=single
 #####################################################
 
 # Compiler
@@ -36,9 +39,6 @@ endif
 # Derived object files
 OBJECTS = $(PROGRAM_FILES:.f90=.o)
 
-.PHONY: default
-default: RunAllFiles
-
 # Default target
 all: $(OUTFILE)
 
@@ -57,9 +57,9 @@ clean:
 # Phony targets
 .PHONY: all clean
 
-##################################################################
-## 				Script to run all files in order 				##
-##################################################################
+##########################################################################
+## 				Script to run all files in order if desired				##
+##########################################################################
 
 .PHONY: RunAllFiles
 RunAllFiles: all

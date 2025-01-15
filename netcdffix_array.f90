@@ -17,14 +17,25 @@ CONTAINS
     INTEGER, INTENT(INOUT) :: ierr
     INTEGER, PARAMETER :: ndims2 = 2
     INTEGER, DIMENSION(ndims2) :: sizes2, dim_ids2, sizes_ex, sizes_ey, sizes_phi, dim_ids_ex, dim_ids_ey, dim_ids_phi
-    INTEGER :: file_id, var_id_2d, var_id_ex, var_id_ey, var_id_phi, i,var_id_vel,var_id_acc,var_id_rho
+    INTEGER :: file_id, var_id_2d, var_id_ex, var_id_ey, var_id_phi, i,var_id_vel,var_id_acc,var_id_rho, i_idx, j_idx
     CHARACTER(LEN=1), DIMENSION(ndims2) :: dims2 = (/'x', 'y'/)
+
+    REAL(REAL64), DIMENSION(run%nx, run%ny) :: phi
+
+    DO j_idx = 1, run%ny
+      DO i_idx = 1, run%nx
+
+        !> Eliminate the ghost cells for phi.
+        phi(i_idx, j_idx) = run%phi(i_idx, j_idx)
+
+      END DO
+    END DO
 
     ! Sizes of the arrays
     sizes2 = SHAPE(run%positions)
     sizes_ex = SHAPE(run%Ex)
     sizes_ey = SHAPE(run%Ey)
-    sizes_phi = SHAPE(run%phi)
+    sizes_phi = SHAPE(phi)
 
     ! Debug: Print the sizes of arrays before writing
     PRINT*, "Sizes of position (2D array): ", sizes2
@@ -145,7 +156,7 @@ CONTAINS
     END IF
     PRINT*, "'rho' variable written successfully."
 
-    ierr = nf90_put_var(file_id, var_id_phi, run%phi)
+    ierr = nf90_put_var(file_id, var_id_phi, phi)
     IF (ierr /= nf90_noerr) THEN
       PRINT*, "Error writing 'phi' variable: ", TRIM(nf90_strerror(ierr))
       RETURN

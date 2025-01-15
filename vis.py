@@ -1,4 +1,4 @@
-# @author Facundo Costa with additions by Gianluca Seaford
+# @author Facundo Costa
 
 import netCDF4 as nc
 import numpy as np
@@ -16,7 +16,6 @@ output_ex_plot_file = path.join(plots_dir, "E_x_Field_Intensity.png")  # Specify
 output_ey_plot_file = path.join(plots_dir, "E_y_Field_Intensity.png")
 output_rho_plot_file = path.join(plots_dir, "Charge_Density_Pseudocolour.png")
 output_pot_plot_file = path.join(plots_dir, "Potential_Pseudocolour.png")
-output_animation_file = path.join(plots_dir, "Particle_Motion_Simulation.mp4")  # Output animation file
 
 # Initialize variables to store the arrays
 position = E_x = E_y = potential = velocity = acceleration = rho = None
