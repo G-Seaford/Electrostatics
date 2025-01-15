@@ -12,30 +12,19 @@ Requirements:
 
 Files:
     * compile_fortran.mk: A Makefile that defines how to compile and link the Fortran source files into an   executable called Electrostatics. It also provides a clean target to remove build artefacts.
-
     * run_code.sh: A bash script that:
         - Compiles the Fortran code by calling 'make -f compile_fortran.mk'.
         - Runs the compiled executable with various command-line arguments (including defaults for nx=100, ny=100, problem=single).
         - Invokes python3 vis.py for visualisation.
         - Cleans up build artefacts by calling 'make clean -f compile_fortran.mk'.
-
     * vis.py: A Python script for visualising the output (e.g., reading .nc files and producing plots).
 
 Usage:
     * Compile & Run with Defaults:
-        ./run_code.sh
-
-    This will compile the code and run './Electrostatics nx=100 ny=100 problem=single' before calling the python3 'vis.py' visualisation script and cleaning up any artifacts from the executable construction.
-
+        './run_code.sh' will compile the code and run './Electrostatics nx=100 ny=100 problem=single' before calling the python3 'vis.py' visualisation script and cleaning up any artifacts from the executable construction.
     * Request Help:
-        ./run_code.sh --help
-
-    For help with command line arguments run the above line. The script will compile the code, run './Electrostatics --help' before displaying the help window and cleaning up any artifacts from the executable construction.
-
+                    For help with command line arguments run './run_code.sh --help'. The script will compile the code, run './Electrostatics --help' before displaying the help window and cleaning up any artifacts from the executable construction.
     * Custom Parameters:
-
-    You can override any or all of the default parameters, and add additional parameters. The parameters available are given by the '--help' menu.
-
+                         You can override any or all of the default parameters, and add additional parameters. The parameters available are given by the '--help' menu.
     * Cleaning Up:
-
-    In normal operation, the script automatically cleans when it completes. If you simply wish to remove compiled files manually, you can run 'make -f compile_fortran.mk clean' to remove the Electrostatics executable and any artifacts from the executable construction.
+                   In normal operation, the script automatically cleans when it completes. If you simply wish to remove compiled files manually, you can run 'make -f compile_fortran.mk clean' to remove the Electrostatics executable and any artifacts from the executable construction.
