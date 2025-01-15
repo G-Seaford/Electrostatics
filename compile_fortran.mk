@@ -63,16 +63,16 @@ clean:
 
 .PHONY: RunAllFiles
 RunAllFiles: all
-	@echo ">>> 	Running the executable with command-line arguments... 	<<<"
+	@echo ">>> 	Running the executable with command-line arguments..."
 	./$(OUTFILE) $(command_line_arguments)
-	@echo ">>>															<<<"
+	@echo ">>>"
 
-	@echo ">>> 				Calling the Python script...	 			<<<"
+	@echo ">>> 				Calling the Python script..."
 	python3 vis.py
-	@echo ">>>															<<<"
+	@echo ">>>"
 
-	@echo ">>> 					Cleaning up artifacts 					<<<"
+	@echo ">>> 					Cleaning up artifacts"
 	rm -f $(OBJECTS) $(OUTFILE)
-	@echo ">>>															<<<"
-	@echo ">>> 				Process terminated successfully 			<<<"
-	@echo ">>>															<<<"
+	@echo ">>>"
+	@echo ">>> 				Process terminated successfully"
+	@echo ">>>"

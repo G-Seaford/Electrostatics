@@ -2,17 +2,19 @@ import netCDF4 as nc
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import cm  # For color mapping
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+from os import path, makedirs
 # By facu
 
 file_name = 'Gauss-Seidel_Electrostatics.nc'
-output_plot_file = "position_plot.png"  # Specify the name for the saved plot file
-output_ex_plot_file = "Ex_color_plot.png"  # Specify the name for the saved E_x color plot file
-output_ey_plot_file = "Ey_color_plot.png"
-output_rho_plot_file = "rho_color_plot.png"
-output_pot_plot_file = "pot_color_plot.png"
-output_animation_file = "particle_motion_simulation.mp4"  # Output animation file
-# Initialize variables to store the arrays
-position = E_x = E_y = potential = velocity = accelerations = rho = None
+
+plots_dir = 'plots'
+output_plot_file = path.join(plots_dir, "Particle_Positions.png")  # Specify the name for the saved plot file
+output_ex_plot_file = path.join(plots_dir, "E_x_Field_Intensity.png")  # Specify the name for the saved E_x color plot file
+output_ey_plot_file = path.join(plots_dir, "E_y_Field_Intensity.png")
+output_rho_plot_file = path.join(plots_dir, "Charge_Density_Pseudocolour.png")
+output_pot_plot_file = path.join(plots_dir, "Potential_Pseudocolour.png")
+position = E_x = E_y = potential = velocity = acceleration = rho = None
 
 # Open the NetCDF file
 try:
@@ -84,6 +86,8 @@ try:
         print(f"acceleration array: shape {acceleration.shape}")
     if rho is not None:
         print(f"rho array: shape {rho.shape}")
+        
+    makedirs(plots_dir, exist_ok=True)
     
     # All the variables are here now for our use
     if position is not None:
@@ -94,26 +98,45 @@ try:
         num_points = len(x)
         colors = cm.jet(np.linspace(0, 1, num_points))  # Gradient color map
 
-        plt.figure(figsize=(8, 6))
-        plt.scatter(x, y, c=range(num_points), cmap='viridis', s=20)
-        plt.colorbar(label="# iteration")
-        plt.title("Particle Positions")
-        plt.xlabel("Position (Axis 1)")
-        plt.ylabel("Position (Axis 2)")
-        plt.xlim(-1, 1)
-        plt.ylim(-1, 1)
-        plt.grid(True)
+        fig, ax = plt.subplots(figsize=(8, 6))
+        scatter_main = ax.scatter(x, y, c=range(num_points), cmap='viridis', s=20)
+        fig.colorbar(scatter_main, ax=ax, label="Iteration Number")
+        ax.set_xlabel("X Position (arb.)")
+        ax.set_ylabel("Y Position (arb.)")
+        ax.set_xlim(-1, 1)
+        ax.set_ylim(-1, 1)
+        ax.grid(True)
 
-        # Save the plot
-        plt.savefig(output_plot_file)
-        print(f"Position scatter plot saved as '{output_plot_file}'.")
+        # Create the inset axis
+        inset_ax = inset_axes(
+            ax,
+            width="30%",   
+            height="30%",
+            loc="lower left",
+            borderpad=4.0
+        )
+        
+        # Plot the same data in the inset
+        scatter_inset = inset_ax.scatter(x, y, c=range(num_points), cmap='viridis', s=20)
+        
+        # Zoom in on the min/max region
+        inset_ax.set_xlim(x.min(), x.max())
+        inset_ax.set_ylim(y.min(), y.max())
+
+        # Give the inset its own axis labels
+        inset_ax.set_xlabel("X (arb.)", fontsize=8)
+        inset_ax.set_ylabel("Y (arb.)", fontsize=8)
+        inset_ax.tick_params(axis='both', which='major', labelsize=8)
+        
+        plt.savefig(output_plot_file, dpi=300)
+        
     if E_x is not None:
         plt.figure(figsize=(8, 6))
         plt.imshow(E_x, cmap='viridis', origin='lower', extent=(-1, 1, -1, 1))
-        plt.colorbar(label="E_x Field")
-        plt.title("E_x Field Color Plot")
-        plt.xlabel("X")
-        plt.ylabel("Y")
+        plt.colorbar(label="Field Strength (arb.)")
+        plt.title("E_x Field Intensity across Grid.")
+        plt.xlabel("X Position (arb.)")
+        plt.ylabel("Y Position (arb.)")
         plt.grid(False)
 
         # Save the color plot
@@ -124,10 +147,10 @@ try:
     if E_y is not None:
         plt.figure(figsize=(8, 6))
         plt.imshow(E_y, cmap='viridis', origin='lower', extent=(-1, 1, -1, 1))
-        plt.colorbar(label="E_y Field")
-        plt.title("E_y Field Color Plot")
-        plt.xlabel("X")
-        plt.ylabel("Y")
+        plt.colorbar(label="Field Strength (arb.)")
+        plt.title("E_y Field Intensity across Grid.")
+        plt.xlabel("X Position (arb.)")
+        plt.ylabel("Y Position (arb.)")
         plt.grid(False)
 
         # Save the color plot
@@ -138,10 +161,10 @@ try:
     if rho is not None:
         plt.figure(figsize=(8, 6))
         plt.imshow(rho, cmap='viridis', origin='lower', extent=(-1, 1, -1, 1))
-        plt.colorbar(label="rho")
-        plt.title("rho Plot")
-        plt.xlabel("X")
-        plt.ylabel("Y")
+        plt.colorbar(label="Charge Density (arb.)")
+        plt.title("Distribution of Charge Density across Grid.")
+        plt.xlabel("X Position (arb.)")
+        plt.ylabel("Y Position (arb.)")
         plt.grid(False)
 
         # Save the color plot
@@ -153,10 +176,10 @@ try:
     if potential is not None:
         plt.figure(figsize=(8, 6))
         plt.imshow(potential, cmap='viridis', origin='lower', extent=(-1, 1, -1, 1))
-        plt.colorbar(label="rho")
-        plt.title("potential Plot")
-        plt.xlabel("X")
-        plt.ylabel("Y")
+        plt.colorbar(label="Potential (arb.)")
+        plt.title(" Gauss-Seidel Potential across Grid.")
+        plt.xlabel("X Position (arb.)")
+        plt.ylabel("Y Position (arb.)")
         plt.grid(False)
 
         # Save the color plot
@@ -164,9 +187,6 @@ try:
         print(f"potential color plot saved as '{output_pot_plot_file}'.")
     else:
         print("potential data not available for plotting.")
-    
-
-    
 
 except FileNotFoundError:
     print(f"Error: File '{file_name}' not found.")

@@ -67,8 +67,8 @@ MODULE VelocityVerlet
 
         ! find acceleration using newtons 2nd law
 
-        acceleration(1,step+1) = -1*E_field_x(cell_x,cell_y)
-        acceleration(2,step+1) = -1*E_field_y(cell_x,cell_y)
+        acceleration(1,step+1) = -1.0*E_field_x(cell_x,cell_y)
+        acceleration(2,step+1) = -1.0*E_field_y(cell_x,cell_y)
 
         ! update the velocity
         velocity(1,step+1) = velocity(1,step) + 0.5_REAL64*delta_t*(acceleration(1,step + 1)+acceleration(1,step))

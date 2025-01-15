@@ -40,31 +40,31 @@ for arg in "$@"; do
 done
 
 
-echo ">>> 					Compiling Fortran Code					<<<"
+echo ">>> 					Compiling Fortran Code"
 make  -f compile_fortran.mk 
 
-echo ">>> 	Running the executable with command-line arguments... 	<<<"
+echo ">>> 	Running the executable with command-line arguments..."
 
 if [ "$help_requested" = "1" ]; then
-    echo ">>>     --help requested. Displaying help then exiting.       <<<"
+    echo ">>>     --help requested. Displaying help then exiting."
     ./Electrostatics --help
-    echo ">>>															<<<"
-    echo ">>> 					Cleaning up artifacts 					<<<"
+    echo ">>>"
+    echo ">>> 					Cleaning up artifacts"
     make clean -f compile_fortran.mk
     exit 0
 fi
 
 
 ./Electrostatics nx="${nx}" ny="${ny}" problem="${problem}" "${extra_args[@]}"
-echo ">>>															<<<"
+echo ">>>"
 
-echo ">>> 				Calling the Python script        			<<<"
+echo ">>> 				Calling the Python script"
 python3 vis.py
-echo ">>>															<<<"
+echo ">>>"
 
-echo ">>> 					Cleaning up artifacts 					<<<"
+echo ">>> 					Cleaning up artifacts"
 make clean -f compile_fortran.mk
-echo ">>>															<<<"
+echo ">>>"
 
-echo ">>> 				Process terminated successfully 			<<<"
-echo ">>>															<<<"
+echo ">>> 				Process terminated successfully"
+echo ">>>"
