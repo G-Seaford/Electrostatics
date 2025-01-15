@@ -17,10 +17,12 @@ This project implements a Gauss–Seidel solver for electrostatic problems in Fo
 
 ## Files
 
-- **`compile_fortran.mk`**  
+- **`compile_fortran.mk`**
+  
   A Makefile that defines how to compile and link the Fortran source files into an executable called `Electrostatics`. It also provides a `clean` target to remove build artefacts.
 
-- **`run_code.sh`**  
+- **`run_code.sh`**
+    
   A bash script that:
   1. Compiles the Fortran code by calling:
      ```bash
@@ -40,7 +42,8 @@ This project implements a Gauss–Seidel solver for electrostatic problems in Fo
      make clean -f compile_fortran.mk
      ```
 
-- **`vis.py`**  
+- **`vis.py`**
+   
   A Python script for visualising the output (e.g., reading `.nc` files and producing plots).
 
 ---
