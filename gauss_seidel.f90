@@ -355,7 +355,7 @@ MODULE SolveGaussSeidel
                 rho = data_in%rho(x_idx, y_idx)
 
                 phi_xdiff = (data_in%phi(x_idx + 1, y_idx) - 2.0 * data_in%phi(x_idx, y_idx) + data_in%phi(x_idx - 1, y_idx))
-                phi_ydiff = (data_in%phi(x_idx, y_idx + 1) -  2.0 * data_in%phi(x_idx, y_idx) + data_in%phi(x_idx, y_idx - 1))
+                phi_ydiff = (data_in%phi(x_idx, y_idx + 1) - 2.0 * data_in%phi(x_idx, y_idx) + data_in%phi(x_idx, y_idx - 1))
 
                 tot_diff = phi_xdiff * dx2_inv + phi_ydiff * dy2_inv
 

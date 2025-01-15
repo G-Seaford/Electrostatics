@@ -6,7 +6,7 @@
 # 				Simulation Parameters				#
 #####################################################
 
-command_line_arguments := nx=100 ny=100 problem=single
+command_line_arguments := nx=100 ny=100 problem=double
 #####################################################
 
 # Compiler
